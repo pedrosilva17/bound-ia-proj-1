@@ -14,7 +14,7 @@ class Vertex:
     def get_index(self) -> int:
         return self.index
 
-    def get_status(self) -> str:
+    def get_status(self) -> Piece:
         return self.status
     
     # Setters
@@ -22,7 +22,7 @@ class Vertex:
     def set_index(self, index: int):
         self.index = index
 
-    def set_status(self, status: str):
+    def set_status(self, status: Piece):
         self.status = status
         
     # Custom print

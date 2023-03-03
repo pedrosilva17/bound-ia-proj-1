@@ -77,38 +77,68 @@ class State:
         return self.player_piece
     
     def get_opponent_piece(self):
-        return self.next_player_piece
+        return Piece(3 - self.player_piece.value)
         
-    def get_winner(self):
+    def get_winner(self) -> Player:
         return self.winner
         
     def update_winner(self):
         paths = self.board.get_paths()
+        log = 1
         for fork in paths:
             if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
-                self.winner = self.player_piece if self.next_player_piece == fork.get_status() else self.next_player_piece
-                break
+                if log == 1: 
+                    print(Piece.Empty not in [f.get_status() for f in paths[fork]])
+                    print(fork.get_status() != Piece.Empty)
+                    log = 0
+                self.winner = self.player_piece if self.get_opponent_piece() == fork.get_status() else self.get_opponent_piece()
+                return
             
     
-    def move(self, index: int) -> None:
+    def move(self, curr_index: int, move_index: int) -> None:
         # TODO
-        if self.board.get_fork(index).get_status() == Piece.Empty:
-            self.board.get_fork(index).set_status(self.player_piece)
-        self.player_piece = Piece(3 - self.player_piece.value)  # Swap turns
-        return
+        if self.valid_move(curr_index, move_index):
+            self.board.get_fork(move_index).set_status(self.player_piece)
+            self.board.get_fork(curr_index).set_status(Piece.Empty)
+            self.player_piece = Piece(3 - self.player_piece.value)  # Swap turns
+        else:
+            raise ValueError("Invalid move!")
+
+
+    def valid_move(self, curr_index: int, move_index: int) -> bool:
+        curr_fork = self.board.get_fork(curr_index)
+        move_fork = self.board.get_fork(move_index)
+        return (move_fork in self.board.get_paths()[curr_fork]
+                and curr_fork.get_status() == self.player_piece
+                and move_fork.get_status() == Piece.Empty)
+    
+
+    def __repr__(self):
+        return self.board.__repr__()
     
 class Bound:
     # TODO
-    def __init__(self, player_1: Player, player_2: Player, state_list: list = []) -> None:
+    def __init__(self, player_1: Player, player_2: Player, initial_state: State) -> None:
         self.player_1 = player_1
         self.player_2 = player_2
-        self.state_list = state_list
-        pass
+        self.state = initial_state
+        self.state_history = [self.state]
+
     
-    def play(self) -> None:
-        pass
+    def play(self) -> Player:
+        self.state_history = [State(self.player_1)]
+        winner = self.game_loop()
+        return winner
     
-    def game_loop(self):
-        pass
-    
-    
+    def game_loop(self) -> Player:
+        while not self.state_history[-1].get_winner():
+            piece = int(input("What piece do you move? (0-19) "))
+            move = int(input("Where to? (0-19) "))
+            try:
+                self.state.move(piece, move)
+                self.state.update_winner()
+                self.state_history.append(self.state)
+            except ValueError:
+                print("Invalid move. Try again")
+            print(self.state)
+        return self.state.get_winner()
