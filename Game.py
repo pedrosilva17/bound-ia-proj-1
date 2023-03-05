@@ -68,7 +68,7 @@ class Board(Graph):
         
 class State:
     
-    def __init__(self, player: Player, board: Board = Board(5)) -> None:
+    def __init__(self, player: Player, board: Board = Board(8)) -> None:
         self.board = board
         self.player_piece = player.get_piece()
         self.winner = None

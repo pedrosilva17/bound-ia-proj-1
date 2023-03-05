@@ -1,5 +1,6 @@
 import pygame as pg
 import math
+from constants import COLOR_DICT
 
 class Interface:
 
@@ -8,7 +9,7 @@ class Interface:
         self.DEFAULT_HEIGHT = 550
         self.CENTER_X = self.DEFAULT_WIDTH/2
         self.CENTER_Y = self.DEFAULT_HEIGHT/2
-        self.OUTTER_RADIUS = self.DEFAULT_HEIGHT-350
+        self.OUTTER_RADIUS = self.DEFAULT_HEIGHT-320
         self.OUTTER_MIDDLE_RADIUS = self.OUTTER_RADIUS - 70
         self.INNER_MIDDLE_RADIUS = self.OUTTER_MIDDLE_RADIUS - 70
         self.INNER_RADIUS =  self.INNER_MIDDLE_RADIUS - 70
@@ -44,7 +45,7 @@ class Interface:
         outter = self.xy_calc(outter, angle, self.OUTTER_RADIUS, angle)
         outter_middle = self.xy_calc(outter_middle, angle, self.OUTTER_MIDDLE_RADIUS)
         inner_middle = self.xy_calc(inner_middle, angle, self.INNER_MIDDLE_RADIUS, angle/2)
-        inner = self.xy_calc(inner, angle, self.INNER_RADIUS, angle_offset*angle)
+        inner = self.xy_calc(inner, angle, self.INNER_RADIUS, -angle/2)
         layers = outter + outter_middle + inner_middle + inner
         layers.sort(key=lambda x: x[0])
         return layers
@@ -52,17 +53,18 @@ class Interface:
 
     def render(self, board):
         vertex_list = self.vertex_positioning(board)
+        print(vertex_list)
         pg.init()
         screen = pg.display.set_mode((self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT))
         run = True
         
         while run:
-            screen.fill((255, 255, 255))
-            for (v, pos) in vertex_list:
-                pg.draw.circle(screen, (0,0,0), pos, 3)
+            screen.fill((69, 227, 255))
             for (p,e) in board.get_paths().items():
                 for edge in e:
-                    pg.draw.line(screen, (255,0,0), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1])
+                    pg.draw.line(screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1])
+            for (v, pos) in vertex_list:
+                pg.draw.circle(screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 5)
             
 
             pg.display.flip()
