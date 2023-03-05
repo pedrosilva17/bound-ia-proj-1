@@ -3,6 +3,7 @@
 #
 
 from Game import Bound, State, Player, Piece
+from Interface import Interface
 
 if __name__ == "__main__":
     p1 = Player(1, Piece.White)
@@ -15,5 +16,7 @@ if __name__ == "__main__":
     s.get_board().get_fork(6).set_status(Piece.Black)
     print(s)
     game = Bound(p2, p1, s)
+    ui = Interface()
+    ui.render(s.get_board())
     winner = game.play()
-    print("Winner: " + winner.name)
+    # print("Winner: " + winner.name)

@@ -59,6 +59,9 @@ class Board(Graph):
     
     def get_paths(self) -> dict:
         return self.paths
+
+    def get_forks(self) -> dict:
+        return self.forks
     
     def __repr__(self):
         return super().__repr__()
