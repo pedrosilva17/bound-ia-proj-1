@@ -68,7 +68,7 @@ class Board(Graph):
         
 class State:
     
-    def __init__(self, player: Player, board: Board = Board(8)) -> None:
+    def __init__(self, player: Player, board: Board = Board(5)) -> None:
         self.board = board
         self.player_piece = player.get_piece()
         self.winner = None
@@ -128,13 +128,14 @@ class Bound:
         self.state_history = [self.state]
 
     
-    def play(self) -> Player:
+    def play(self, ui) -> Player:
         self.state_history = [State(self.player_1)]
-        winner = self.game_loop()
+        winner = self.game_loop(ui)
         return winner
     
-    def game_loop(self) -> Player:
+    def game_loop(self, ui) -> Player:
         while not self.state_history[-1].get_winner():
+            ui.render(self.state.get_board())
             piece = int(input("What piece do you move? (0-19) "))
             move = int(input("Where to? (0-19) "))
             try:
@@ -144,4 +145,5 @@ class Bound:
             except ValueError:
                 print("Invalid move. Try again")
             print(self.state)
+            
         return self.state.get_winner()
