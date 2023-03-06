@@ -5,14 +5,19 @@ from constants import COLOR_DICT
 class Interface:
 
     def __init__(self):            
-        self.DEFAULT_WIDTH = 600
-        self.DEFAULT_HEIGHT = 550
+        self.DEFAULT_WIDTH = 800
+        self.DEFAULT_HEIGHT = 750
         self.CENTER_X = self.DEFAULT_WIDTH/2
         self.CENTER_Y = self.DEFAULT_HEIGHT/2
-        self.OUTER_RADIUS = self.DEFAULT_HEIGHT-320
+        self.OUTER_RADIUS = self.DEFAULT_HEIGHT-520
         self.OUTER_MIDDLE_RADIUS = self.OUTER_RADIUS - 70
         self.INNER_MIDDLE_RADIUS = self.OUTER_MIDDLE_RADIUS - 70
         self.INNER_RADIUS =  self.INNER_MIDDLE_RADIUS - 70
+        pg.init()
+        self.bg_image = pg.image.load("./assets/bg-sprite.png")
+        self.screen = pg.display.set_mode((self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT))
+        self.screen.blit(self.bg_image, (0,0))
+        pg.display.flip()
 
     def xy_calc(self, layer, angle, radius, offset=0):
         temp = []
@@ -50,17 +55,14 @@ class Interface:
 
     def render(self, board):
         vertex_list = self.vertex_positioning(board)
-        pg.init()
-        screen = pg.display.set_mode((self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT))
-        screen.fill((69, 227, 255))
+        self.screen.blit(self.bg_image, (0,0))
         for (p,e) in board.get_paths().items():
             for edge in e:
-                pg.draw.line(screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1])
+                pg.draw.line(self.screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1], 3)
         for (v, pos) in vertex_list:
-            pg.draw.circle(screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 5)
-        
-
-        pg.display.flip()       
+            pg.draw.circle(self.screen, (255,255,255), pos, 11)
+            pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 9)
+        pg.display.flip()    
 
     def quit(self):
         pg.quit()
