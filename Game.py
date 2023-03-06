@@ -3,6 +3,7 @@
 #
 
 from Graph import Graph, Vertex, Piece
+from Interface import Interface
 
 
 class Player:
@@ -50,9 +51,13 @@ class Board(Graph):
         self.add_edge(self.get_vertex(outer_length - 1), self.get_vertex(0))
         self.add_edge(self.get_vertex(outer_length * 3 - 1), self.get_vertex(outer_length))
         self.add_edge(self.get_vertex(outer_length * 4 - 1), self.get_vertex(outer_length * 3))
-
+        
+        self.outer_length = outer_length
         self.forks = self.vertex_list
         self.paths = self.adj_list
+        
+    def get_outer_length(self) -> int:
+        return self.outer_length
         
     def get_fork(self, index: int) -> Vertex:
         return super().get_vertex(index)
@@ -120,22 +125,45 @@ class State:
         return self.board.__repr__()
     
 class Bound:
-    # TODO
-    def __init__(self, player_1: Player, player_2: Player, initial_state: State) -> None:
+
+    def __init__(self, player_1: Player, player_2: Player, outer_length: int, free_space: int) -> None:
         self.player_1 = player_1
         self.player_2 = player_2
-        self.state = initial_state
-        self.state_history = [self.state]
+        self.outer_length = outer_length
+        
+        self.state = State(self.player_1, Board(outer_length))
+        self.ui = Interface()
+        self.initial_board = self.get_state().get_board()
+        self.place_pieces(free_space)
+        
+    def place_pieces(self, free_space: int) -> None:
+        if self.player_1.get_piece() == Piece.Red:
+            for i in range(self.outer_length):
+                if i == free_space: continue
+                self.initial_board.get_fork(i).set_status(Piece.Red)
+            for j in range(self.outer_length * 3, self.outer_length * 4):
+                if ((j == self.outer_length * 3 + free_space - 1) 
+                    or (j == self.outer_length * 4 - 1 and free_space == 0)): continue
+                self.initial_board.get_fork(j).set_status(Piece.Black)
+        else:
+            for i in range(self.outer_length * 3, self.outer_length * 4):
+                if i == free_space: continue
+                self.initial_board.get_fork(i).set_status(Piece.Black)
+            for j in range(self.outer_length):
+                if ((j == free_space - self.outer_length * 3 + 1) 
+                    or (j == 0 and free_space == self.outer_length * 4 - 1)): continue
+                self.initial_board.get_fork(j).set_status(Piece.Red)
 
     
-    def play(self, ui) -> Player:
-        self.state_history = [State(self.player_1)]
-        winner = self.game_loop(ui)
+    def play(self) -> Player:
+        self.state_history = [self.state]
+        winner = self.game_loop()
         return winner
     
-    def game_loop(self, ui) -> Player:
+    
+    def game_loop(self) -> Player:
+        self.ui.render(self.state.get_board())
         while not self.state_history[-1].get_winner():
-            ui.render(self.state.get_board())
             piece = int(input("What piece do you move? (0-19) "))
             move = int(input("Where to? (0-19) "))
             try:
@@ -145,5 +173,10 @@ class Bound:
             except ValueError:
                 print("Invalid move. Try again")
             print(self.state)
+            self.ui.render(self.state.get_board())
             
         return self.state.get_winner()
+    
+    
+    def get_state(self) -> State:
+        return self.state

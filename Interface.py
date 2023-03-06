@@ -26,7 +26,6 @@ class Interface:
     def vertex_positioning(self, board):
         ring_size = int(len(board.get_forks())/4)
         angle = (2*math.pi)/ring_size
-        angle_offset = ring_size/2-0.5
         vertex_list = [e.get_index() for (f,e) in board.get_forks().items()]
         outer = vertex_list[0:ring_size]
         del vertex_list[0:ring_size]
@@ -40,8 +39,6 @@ class Interface:
                 outer_middle = [x for x in vertex_list if x % 2 != 0]
                 inner_middle = [x for x in vertex_list if x % 2 == 0]
 
-        print(outer_middle, inner_middle)
-
         outer = self.xy_calc(outer, angle, self.OUTER_RADIUS, angle)
         outer_middle = self.xy_calc(outer_middle, angle, self.OUTER_MIDDLE_RADIUS)
         inner_middle = self.xy_calc(inner_middle, angle, self.INNER_MIDDLE_RADIUS, angle/2)
@@ -53,7 +50,6 @@ class Interface:
 
     def render(self, board):
         vertex_list = self.vertex_positioning(board)
-        print(vertex_list)
         pg.init()
         screen = pg.display.set_mode((self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT))
         screen.fill((69, 227, 255))
