@@ -4,6 +4,8 @@
 
 from Graph import Graph, Vertex, Piece
 from Interface import Interface
+from utils import parse_int_input
+import random, time, re
 
 
 class Player:
@@ -92,7 +94,7 @@ class State:
         
     def update_winner(self):
         paths = self.board.get_paths()
-        log = 1
+        log = 0
         for fork in paths:
             if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
                 if log == 1: 
@@ -120,7 +122,16 @@ class State:
                 and curr_fork.get_status() == self.player_piece
                 and move_fork.get_status() == Piece.Empty)
     
-
+    
+    def available_moves(self) -> list:
+        moves = []
+        for i in range(self.board.get_outer_length() * 4):
+            for j in self.board.get_siblings(i):
+                if self.valid_move(i, j.get_index()):
+                    moves.append((i, j.get_index()))
+        return moves
+        
+        
     def __repr__(self):
         return self.board.__repr__()
     
@@ -135,6 +146,11 @@ class Bound:
         self.ui = Interface()
         self.initial_board = self.get_state().get_board()
         self.place_pieces(free_space)
+        
+    
+    def get_state(self) -> State:
+        return self.state
+    
         
     def place_pieces(self, free_space: int) -> None:
         if self.player_1.get_piece() == Piece.Red:
@@ -154,29 +170,106 @@ class Bound:
                     or (j == 0 and free_space == self.outer_length * 4 - 1)): continue
                 self.initial_board.get_fork(j).set_status(Piece.Red)
 
+
+    def ask_move(self):
+        piece = parse_int_input(f"{self.state.get_player_piece().name}, What piece do you move?\n",
+                                0, self.state.get_board().get_outer_length() * 4 - 1)
+        move = parse_int_input("Where do you move it?\n",
+                               0, self.state.get_board().get_outer_length() * 4 - 1)
+        try:
+            self.state.move(piece, move)
+            self.state.update_winner()
+            self.state_history.append(self.state)
+        except ValueError:
+            print("Invalid move. Try again")
+
     
-    def play(self) -> Player:
+    def random_move(self):
+        moves = self.state.available_moves()
+        piece, move = moves[random.randint(0, len(moves) - 1)]
+        self.state.move(piece, move)
+        self.state.update_winner()
+        self.state_history.append(self.state)
+    
+    
+    def play(self, mode: int) -> Player:
         self.state_history = [self.state]
-        winner = self.game_loop()
-        return winner
+        match mode:
+            case 1:
+                winner = self.game_loop(self.ask_move, self.ask_move)
+            case 2:
+                winner = self.game_loop(self.ask_move, self.random_move)
+            case 3:
+                winner = self.game_loop(self.random_move, self.random_move)
+                
+        if self.player_1.get_piece() == winner:
+            input("Winner: " + self.player_1)
+            self.ui.quit()
+            return self.player_1
+        else:
+            input("Winner: " + self.player_1)
+            self.ui.quit()
+            return self.player_2
     
     
-    def game_loop(self) -> Player:
+    def game_loop(self, player_func, next_player_func) -> Player:
         self.ui.render(self.state.get_board())
         while not self.state_history[-1].get_winner():
-            piece = int(input("What piece do you move? (0-19) "))
-            move = int(input("Where to? (0-19) "))
-            try:
-                self.state.move(piece, move)
-                self.state.update_winner()
-                self.state_history.append(self.state)
-            except ValueError:
-                print("Invalid move. Try again")
-            print(self.state)
+            # print(self.state.available_moves())
+            player_func()
+            player_func, next_player_func = next_player_func, player_func
+            # print(self.state)
             self.ui.render(self.state.get_board())
             
         return self.state.get_winner()
-    
-    
-    def get_state(self) -> State:
-        return self.state
+
+
+def one_game() -> None:
+    game_mode = parse_int_input("Choose your gamemode:\n"
+                                "1- Human vs Human\n"
+                                "2- Human vs Computer\n"
+                                "3- Computer vs Computer\n",
+                                1, 3)
+    outer_length = parse_int_input("Choose a size for the board's outer circle.\n"
+                                   "The board's size will be 4 times that number.\n"
+                                   "Must be between 3 and 10, values between 5 and 8 work best.\n",
+                                   3, 10)
+    p1_name = re.sub(r'\W+', '', input("Player 1 - Insert your name. You will play first.\n"
+                                       "Only alphanumeric characters and underscores will be stored.\n"))
+    p2_name = re.sub(r'\W+', '', input("Player 2 - Insert your name.\n"
+                                       "Only alphanumeric characters and underscores will be stored.\n"))
+    p1_piece = parse_int_input("Player 1 - Choose your piece:\n"
+                               "1 - Red, the outer pieces.\n"
+                               "2 - Black, the inner pieces.\n",
+                               1, 2)
+    p2_piece = Piece(3 - p1_piece)
+    if p1_piece == 1:
+        free_space = parse_int_input(f"Player 1 - Choose the free space in your piece placement.\n"
+                                     f"Keep in mind the Red pieces are placed on the outer circle.\n"
+                                     f"Valid empty spaces: 0-{outer_length - 1}\n",
+                                     0, outer_length - 1)
+    else:
+        free_space = parse_int_input(f"Player 1 - Choose the free space in your piece placement.\n"
+                                     f"Keep in mind the Black pieces are placed on the inner circle.\n"
+                                     f"Valid empty spaces: {outer_length * 3}-{outer_length * 4 - 1}\n",
+                                     outer_length * 3, outer_length * 4 - 1)
+
+    p1 = Player(1, Piece(p1_piece), p1_name)
+    p2 = Player(2, Piece(p2_piece), p2_name)
+    game = Bound(p1, p2, outer_length, free_space)
+    run = True
+    while run:
+        winner = game.play(game_mode)
+        run = False
+
+
+def run_games(n_games: int) -> None:
+    p1 = Player(1, Piece(Piece.Red), "Red")
+    p2 = Player(2, Piece(Piece.Black), "Black")
+    results = {"Red": 0, "Black": 0}
+    for i in range(n_games):
+        game = Bound(p2, p1, 5, 0)
+        winner = game.play(3)
+        print(f"Winner: {winner.get_name()}")
+        results[winner.get_name()] += 1
+    print(results)

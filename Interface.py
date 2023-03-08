@@ -56,12 +56,23 @@ class Interface:
     def render(self, board):
         vertex_list = self.vertex_positioning(board)
         self.screen.blit(self.bg_image, (0,0))
+        index = 0
+        font = pg.font.SysFont('arial', 9)
         for (p,e) in board.get_paths().items():
             for edge in e:
                 pg.draw.line(self.screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1], 3)
         for (v, pos) in vertex_list:
             pg.draw.circle(self.screen, (255,255,255), pos, 11)
             pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 9)
+            if board.get_fork(v).get_status().name != "Empty": 
+                textColor = (255,255,255)
+            else:
+                textColor = (0, 0, 0)
+            text = font.render(str(index), True, textColor)
+            textRect = text.get_rect()
+            textRect.center = pos
+            self.screen.blit(text, textRect)
+            index += 1
         pg.display.flip()    
 
     def quit(self):
