@@ -5,7 +5,7 @@
 from Graph import Graph, Vertex, Piece
 from Interface import Interface
 from utils import parse_int_input
-import random, time, re
+import random, time, re, numpy
 
 
 class Player:
@@ -107,7 +107,7 @@ class State:
     
     def move(self, curr_index: int, move_index: int) -> None:
         # TODO
-        if self.valid_move(curr_index, move_index):
+        if self.valid_move(curr_index, move_index, self.player_piece):
             self.board.get_fork(move_index).set_status(self.player_piece)
             self.board.get_fork(curr_index).set_status(Piece.Empty)
             self.player_piece = Piece(3 - self.player_piece.value)  # Swap turns
@@ -115,21 +115,30 @@ class State:
             raise ValueError("Invalid move!")
 
 
-    def valid_move(self, curr_index: int, move_index: int) -> bool:
+    def valid_move(self, curr_index: int, move_index: int, player_piece: Piece) -> bool:
         curr_fork = self.board.get_fork(curr_index)
         move_fork = self.board.get_fork(move_index)
         return (move_fork in self.board.get_paths()[curr_fork]
-                and curr_fork.get_status() == self.player_piece
+                and curr_fork.get_status() == player_piece
                 and move_fork.get_status() == Piece.Empty)
     
     
-    def available_moves(self) -> list:
+    def available_moves(self, player_piece: Piece) -> list:
         moves = []
         for i in range(self.board.get_outer_length() * 4):
             for j in self.board.get_siblings(i):
-                if self.valid_move(i, j.get_index()):
+                if self.valid_move(i, j.get_index(), player_piece):
                     moves.append((i, j.get_index()))
         return moves
+    
+    
+    def count_moves(self, player_piece: Piece):
+        return len(self.available_moves(player_piece))
+    
+    
+    def list_moves(self, player_piece: Piece):
+        player_path_status = [list(map(lambda fork: fork.get_status(), v)) for k, v in self.board.get_paths().items() if k.get_status() == player_piece]
+        return [path.count(Piece.Empty) for path in player_path_status]
         
         
     def __repr__(self):
@@ -169,6 +178,41 @@ class Bound:
                 if ((j == free_space - self.outer_length * 3 + 1) 
                     or (j == 0 and free_space == self.outer_length * 4 - 1)): continue
                 self.initial_board.get_fork(j).set_status(Piece.Red)
+    
+    
+    def play(self, mode: int) -> Player:
+        self.state_history = [self.state]
+        match mode:
+            case 1:
+                winner = self.game_loop(self.ask_move, self.ask_move)
+            case 2:
+                winner = self.game_loop(self.ask_move, self.random_move)
+            case 3:
+                winner = self.game_loop(self.random_move, self.random_move)
+                
+        if self.player_1.get_piece() == winner:
+            input("Winner: " + self.player_1.get_name())
+            self.ui.quit()
+            return self.player_1
+        else:
+            input("Winner: " + self.player_1.get_name())
+            self.ui.quit()
+            return self.player_2
+    
+    
+    def game_loop(self, player_func, next_player_func) -> Player:
+        self.ui.render(self.state.get_board())
+        while not self.state_history[-1].get_winner():
+            # print(self.state.list_moves(self.state.get_player_piece()), self.state.list_moves(Piece(3 - self.state.get_player_piece().value)))
+            # print(evaluate_state_1(self.state))
+            # print(evaluate_state_2(self.state))
+            # print(evaluate_state_3(self.state))
+            player_func()
+            player_func, next_player_func = next_player_func, player_func
+            # print(self.state)
+            self.ui.render(self.state.get_board())
+            
+        return self.state.get_winner()
 
 
     def ask_move(self):
@@ -185,43 +229,33 @@ class Bound:
 
     
     def random_move(self):
-        moves = self.state.available_moves()
+        moves = self.state.available_moves(self.state.get_player_piece())
         piece, move = moves[random.randint(0, len(moves) - 1)]
         self.state.move(piece, move)
         self.state.update_winner()
         self.state_history.append(self.state)
+
+
+def evaluate_state_1(state: State):
+    return state.count_moves(state.get_player_piece()) - state.count_moves(3 - state.get_player_piece().value)
     
     
-    def play(self, mode: int) -> Player:
-        self.state_history = [self.state]
-        match mode:
-            case 1:
-                winner = self.game_loop(self.ask_move, self.ask_move)
-            case 2:
-                winner = self.game_loop(self.ask_move, self.random_move)
-            case 3:
-                winner = self.game_loop(self.random_move, self.random_move)
-                
-        if self.player_1.get_piece() == winner:
-            input("Winner: " + self.player_1)
-            self.ui.quit()
-            return self.player_1
-        else:
-            input("Winner: " + self.player_1)
-            self.ui.quit()
-            return self.player_2
-    
-    
-    def game_loop(self, player_func, next_player_func) -> Player:
-        self.ui.render(self.state.get_board())
-        while not self.state_history[-1].get_winner():
-            # print(self.state.available_moves())
-            player_func()
-            player_func, next_player_func = next_player_func, player_func
-            # print(self.state)
-            self.ui.render(self.state.get_board())
-            
-        return self.state.get_winner()
+def evaluate_state_2(state: State):
+    return numpy.prod(state.list_moves(state.get_player_piece())) - numpy.prod(state.list_moves(Piece(3 - state.get_player_piece().value)))
+
+
+def evaluate_state_3(state: State):
+    return evaluate_state_1(state) + evaluate_state_2(state)
+
+
+def execute_minimax_move(evaluate_func, depth: int):
+    # TODO
+    pass
+
+
+def minimax(state: State, depth: int, alpha: int, beta: int, maximizing: bool, player: Player, evaluate_func):
+    # TODO
+    pass
 
 
 def one_game() -> None:
