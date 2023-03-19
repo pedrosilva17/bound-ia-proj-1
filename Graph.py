@@ -21,6 +21,12 @@ class Vertex:
     def set_status(self, status: Piece):
         self.status = status
         
+    def __eq__(self, vertex):
+        return self.index == vertex.index and self.status == vertex.status
+    
+    def __hash__(self):
+        return hash(self.index)
+        
     # Custom print
     
     def __repr__(self):
@@ -124,6 +130,16 @@ class Graph:
         """
         self.adj_list[v1].remove(v2)
         self.adj_list[v2].remove(v1)
+        
+    def __eq__(self, graph):
+        try:
+            if len(self.adj_list) == len(graph.adj_list):
+                for vertex in self.adj_list:
+                        if self.adj_list[vertex] != graph.adj_list[vertex]: return False
+                return True
+        except KeyError:
+            return False
+                
         
     # Custom print    
         
