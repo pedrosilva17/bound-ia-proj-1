@@ -94,14 +94,9 @@ class State:
         
     def update_winner(self):
         paths = self.board.get_paths()
-        log = 0
         for fork in paths:
             if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
-                if log == 1: 
-                    print(Piece.Empty not in [f.get_status() for f in paths[fork]])
-                    print(fork.get_status() != Piece.Empty)
-                    log = 0
-                self.winner = self.player_piece if self.get_opponent_piece() == fork.get_status() else self.get_opponent_piece()
+                self.winner = Piece(3 - fork.get_status().value)
                 return
             
     
@@ -139,7 +134,7 @@ class State:
     def list_moves(self, player_piece: Piece):
         player_path_status = [list(map(lambda fork: fork.get_status(), v)) for k, v in self.board.get_paths().items() if k.get_status() == player_piece]
         return [path.count(Piece.Empty) for path in player_path_status]
-        
+    
         
     def __repr__(self):
         return self.board.__repr__()
@@ -155,12 +150,12 @@ class Bound:
         self.ui = Interface()
         self.initial_board = self.get_state().get_board()
         self.place_pieces(free_space)
-        
+    
     
     def get_state(self) -> State:
         return self.state
     
-        
+    
     def place_pieces(self, free_space: int) -> None:
         if self.player_1.get_piece() == Piece.Red:
             for i in range(self.outer_length):
@@ -189,13 +184,13 @@ class Bound:
                 winner = self.game_loop(self.ask_move, self.random_move)
             case 3:
                 winner = self.game_loop(self.random_move, self.random_move)
-                
+    
         if self.player_1.get_piece() == winner:
             input("Winner: " + self.player_1.get_name())
             self.ui.quit()
             return self.player_1
         else:
-            input("Winner: " + self.player_1.get_name())
+            input("Winner: " + self.player_2.get_name())
             self.ui.quit()
             return self.player_2
     
@@ -214,7 +209,7 @@ class Bound:
             
         return self.state.get_winner()
 
-
+    
     def ask_move(self):
         piece = parse_int_input(f"{self.state.get_player_piece().name}, What piece do you move?\n",
                                 0, self.state.get_board().get_outer_length() * 4 - 1)
@@ -237,11 +232,11 @@ class Bound:
 
 
 def evaluate_state_1(state: State):
-    return state.count_moves(state.get_player_piece()) - state.count_moves(3 - state.get_player_piece().value)
+    return state.count_moves(state.get_player_piece()) - state.count_moves(state.get_opponent_piece())
     
     
 def evaluate_state_2(state: State):
-    return numpy.prod(state.list_moves(state.get_player_piece())) - numpy.prod(state.list_moves(Piece(3 - state.get_player_piece().value)))
+    return numpy.prod(state.list_moves(state.get_player_piece())) - numpy.prod(state.list_moves(state.get_opponent_piece()))
 
 
 def evaluate_state_3(state: State):
@@ -297,12 +292,23 @@ def one_game() -> None:
         run = False
 
 
+def example():
+    p1 = Player(1, Piece.Red, "player_1")
+    p2 = Player(2, Piece.Black, "player_2")
+    game = Bound(p1, p2, 5, 0)
+    run = True
+    while run:
+        winner = game.play(1)
+        run = False
+
+
+
 def run_games(n_games: int) -> None:
     p1 = Player(1, Piece(Piece.Red), "Red")
     p2 = Player(2, Piece(Piece.Black), "Black")
     results = {"Red": 0, "Black": 0}
     for i in range(n_games):
-        game = Bound(p2, p1, 5, 0)
+        game = Bound(p1, p2, 5, 0)
         winner = game.play(3)
         print(f"Winner: {winner.get_name()}")
         results[winner.get_name()] += 1

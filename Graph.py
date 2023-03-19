@@ -1,7 +1,3 @@
-#
-# ACESSO AOS VERTICES / SIBLINGS POR INDICE E NÃO POR OBJETO (para controlar KeyErrors pelo get_vertex())
-#
-
 from constants import Piece
 
 class Vertex:
