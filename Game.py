@@ -6,7 +6,7 @@ from copy import deepcopy
 from Graph import Graph, Vertex, Piece
 from Interface import Interface
 from utils import parse_int_input
-import random, time, re, numpy
+import random, time, re, numpy, math
 
 
 class Player:
@@ -129,8 +129,6 @@ class State:
             
             try:
                 idx = state_list.index(self)
-                print("Last occurence of board before move: ", idx)
-                print("Last occurence of board after move: ", state_list.index(state_copy))
                 return state_list.index(state_copy) != idx - 1
             except ValueError:
                 return True
@@ -156,13 +154,20 @@ class State:
         player_path_status = [list(map(lambda fork: fork.get_status(), v)) for k, v in self.board.get_paths().items() if k.get_status() == player_piece]
         return [path.count(Piece.Empty) for path in player_path_status]
     
-    
+    def is_final(self):
+        paths = self.board.get_paths()
+        for fork in paths:
+            if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
+                return True
+        return False
+
     def __eq__(self, state):
         return self.board == state.board
     
         
     def __repr__(self):
         return self.board.__repr__()
+
     
 class Bound:
 
@@ -207,7 +212,7 @@ class Bound:
             case 1:
                 winner = self.game_loop(self.ask_move, self.ask_move)
             case 2:
-                winner = self.game_loop(self.ask_move, self.random_move)
+                winner = self.game_loop(self.ask_move, self.execute_minimax_move)
             case 3:
                 winner = self.game_loop(self.random_move, self.random_move)
     
@@ -228,7 +233,11 @@ class Bound:
             # print(evaluate_state_1(self.state))
             # print(evaluate_state_2(self.state))
             # print(evaluate_state_3(self.state))
-            player_func()
+            match player_func.__name__:
+                case "execute_minimax_move":
+                    player_func(self.evaluate_state_2, 4)
+                case _:
+                    player_func()
             player_func, next_player_func = next_player_func, player_func
             # print(self.state)
             self.ui.render(self.state.get_board())
@@ -280,15 +289,51 @@ class Bound:
         return self.evaluate_state_1(state) + self.evaluate_state_2(state)
 
 
-    def execute_minimax_move(evaluate_func, depth: int):
-        # TODO
-        pass
+    def execute_minimax_move(self, evaluate_func, depth: int):
+        move_eval_list = []
+        for move in self.available_moves(self.state.get_player_piece(), self.state_history):
+            history_copy = deepcopy(self.state_history)
+            state_copy = deepcopy(self.state)
+            state_copy.move(move[0], move[1], history_copy)
+            history_copy.append(state_copy)
+            minimax_val = minimax(state_copy, depth, True, -math.inf, math.inf, history_copy, evaluate_func)
+            move_eval_list.append((move, minimax_val * -1))
 
+        move_eval_list = sorted(move_eval_list, key = lambda k: k[1], reverse=True)
+        print(move_eval_list)
+        best_move = move_eval_list[0][0]
 
-def minimax(state: State, depth: int, alpha: int, beta: int, maximizing: bool, player: Player, evaluate_func):
-    # TODO
-    pass
+        self.state.move(best_move[0], best_move[1], self.state_history)
+        self.state.update_winner()
+        state_copy = deepcopy(self.state)
+        self.state_history.append(state_copy)    
 
+def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, state_history, evaluate_func):
+    if depth == 0 or state.is_final(): return evaluate_func(state) * -1
+    if maximizing:
+        maxEval = -math.inf
+        for move in state.available_moves(state.get_player_piece(), state_history):
+            state_copy = deepcopy(state)
+            history_copy = deepcopy(state_history)
+            state_copy.move(move[0], move[1], history_copy)
+            history_copy.append(state_copy)
+            evaluation = minimax(state_copy, depth-1, False, alpha, beta, state_history, evaluate_func)
+            maxEval = max(maxEval, evaluation)
+            alpha = max(alpha, evaluation)
+            if beta <= alpha: break
+        return maxEval
+        
+    minEval = math.inf
+    for move in state.available_moves(state.get_player_piece(), state_history):
+        state_copy = deepcopy(state)
+        history_copy = deepcopy(state_history)
+        state_copy.move(move[0], move[1], history_copy)
+        history_copy.append(state_copy)
+        evaluation = minimax(state_copy, depth-1, True, alpha, beta, history_copy, evaluate_func)
+        minEval = min(minEval, evaluation)
+        beta = min(beta, evaluation)
+        if beta <= alpha: break
+    return minEval
 
 def one_game() -> None:
     game_mode = parse_int_input("Choose your gamemode:\n"
@@ -335,7 +380,7 @@ def example():
     game = Bound(p1, p2, 5, 0)
     run = True
     while run:
-        winner = game.play(1)
+        winner = game.play(2)
         run = False
 
 
