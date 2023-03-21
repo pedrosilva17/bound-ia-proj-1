@@ -111,6 +111,7 @@ class State:
         else:
             raise ValueError("Invalid move!")
 
+        return self
 
     def valid_move(self, curr_index: int, move_index: int, player_piece: Piece, state_history: list) -> bool:
         curr_fork = self.board.get_fork(curr_index)
@@ -133,9 +134,7 @@ class State:
             except ValueError:
                 return True
         else:
-            return False
-            
-    
+            return False    
     
     def available_moves(self, player_piece: Piece, state_history: list) -> list:
         moves = []
@@ -144,7 +143,6 @@ class State:
                 if self.valid_move(i, j.get_index(), player_piece, state_history):
                     moves.append((i, j.get_index()))
         return moves
-    
     
     def count_moves(self, player_piece: Piece):
         return len(self.available_moves(player_piece))
@@ -235,7 +233,7 @@ class Bound:
             # print(evaluate_state_3(self.state))
             match player_func.__name__:
                 case "execute_minimax_move":
-                    player_func(self.evaluate_state_2, 4)
+                    player_func(self.evaluate_state_2, 3)
                 case _:
                     player_func()
             player_func, next_player_func = next_player_func, player_func
@@ -277,16 +275,18 @@ class Bound:
         self.state_history.append(state_copy)
 
 
-    def evaluate_state_1(self, state: State):
-        return len(state.available_moves(state.get_player_piece(), self.state_history)) - len(state.available_moves(state.get_opponent_piece(), self.state_history))
+    def evaluate_state_1(self, state: State, caller):
+        value = len(state.available_moves(state.get_player_piece(), self.state_history)) - len(state.available_moves(state.get_opponent_piece(), self.state_history))
+        return value if caller == state.get_player_piece() else -value
         
-        
-    def evaluate_state_2(self, state: State):
-        return numpy.prod(state.list_moves(state.get_player_piece())) - numpy.prod(state.list_moves(state.get_opponent_piece()))
+    def evaluate_state_2(self, state: State, caller):
+        value = numpy.prod(state.list_moves(state.get_player_piece())) - numpy.prod(state.list_moves(state.get_opponent_piece()))
+        return value if caller == state.get_player_piece() else -value
 
+    def evaluate_state_3(self, state: State, caller):
+        value = self.evaluate_state_1(state) + self.evaluate_state_2(state)
+        return value if caller == state.get_player_piece() else -value
 
-    def evaluate_state_3(self, state: State):
-        return self.evaluate_state_1(state) + self.evaluate_state_2(state)
 
 
     def execute_minimax_move(self, evaluate_func, depth: int):
@@ -296,8 +296,8 @@ class Bound:
             state_copy = deepcopy(self.state)
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
-            minimax_val = minimax(state_copy, depth, True, -math.inf, math.inf, history_copy, evaluate_func)
-            move_eval_list.append((move, minimax_val * -1))
+            minimax_val = minimax(state_copy, depth, False, -math.inf, math.inf, history_copy, evaluate_func, self.state.get_player_piece())
+            move_eval_list.append((move, minimax_val))
 
         move_eval_list = sorted(move_eval_list, key = lambda k: k[1], reverse=True)
         print(move_eval_list)
@@ -308,8 +308,8 @@ class Bound:
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)    
 
-def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, state_history, evaluate_func):
-    if depth == 0 or state.is_final(): return evaluate_func(state) * -1
+def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, state_history, evaluate_func, caller):
+    if depth == 0 or state.is_final(): return evaluate_func(state, caller)
     if maximizing:
         maxEval = -math.inf
         for move in state.available_moves(state.get_player_piece(), state_history):
@@ -317,7 +317,7 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
             history_copy = deepcopy(state_history)
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
-            evaluation = minimax(state_copy, depth-1, False, alpha, beta, state_history, evaluate_func)
+            evaluation = minimax(state_copy, depth-1, False, alpha, beta, state_history, evaluate_func, caller)
             maxEval = max(maxEval, evaluation)
             alpha = max(alpha, evaluation)
             if beta <= alpha: break
@@ -329,7 +329,7 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
         history_copy = deepcopy(state_history)
         state_copy.move(move[0], move[1], history_copy)
         history_copy.append(state_copy)
-        evaluation = minimax(state_copy, depth-1, True, alpha, beta, history_copy, evaluate_func)
+        evaluation = minimax(state_copy, depth-1, True, alpha, beta, history_copy, evaluate_func, caller)
         minEval = min(minEval, evaluation)
         beta = min(beta, evaluation)
         if beta <= alpha: break
