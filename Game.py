@@ -6,7 +6,7 @@ from copy import deepcopy
 from Graph import Graph, Vertex, Piece
 from Interface import Interface
 from utils import parse_int_input
-import random, time, re, numpy, math
+import random, time, re, numpy, math, timeit
 
 
 class Player:
@@ -274,7 +274,6 @@ class Bound:
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)
 
-
     def evaluate_state_1(self, state: State, caller):
         value = len(state.available_moves(state.get_player_piece(), self.state_history)) - len(state.available_moves(state.get_opponent_piece(), self.state_history))
         return value if caller == state.get_player_piece() else -value
@@ -287,18 +286,15 @@ class Bound:
         value = self.evaluate_state_1(state) + self.evaluate_state_2(state)
         return value if caller == state.get_player_piece() else -value
 
-
-
     def execute_minimax_move(self, evaluate_func, depth: int):
         move_eval_list = []
         for move in self.available_moves(self.state.get_player_piece(), self.state_history):
-            history_copy = deepcopy(self.state_history)
+            history_copy = self.state_history
             state_copy = deepcopy(self.state)
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
             minimax_val = minimax(state_copy, depth, False, -math.inf, math.inf, history_copy, evaluate_func, self.state.get_player_piece())
             move_eval_list.append((move, minimax_val))
-
         move_eval_list = sorted(move_eval_list, key = lambda k: k[1], reverse=True)
         print(move_eval_list)
         best_move = move_eval_list[0][0]
@@ -306,7 +302,7 @@ class Bound:
         self.state.move(best_move[0], best_move[1], self.state_history)
         self.state.update_winner()
         state_copy = deepcopy(self.state)
-        self.state_history.append(state_copy)    
+        self.state_history.append(state_copy)
 
 def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, state_history, evaluate_func, caller):
     if depth == 0 or state.is_final(): return evaluate_func(state, caller)
@@ -314,7 +310,7 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
         maxEval = -math.inf
         for move in state.available_moves(state.get_player_piece(), state_history):
             state_copy = deepcopy(state)
-            history_copy = deepcopy(state_history)
+            history_copy = state_history
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
             evaluation = minimax(state_copy, depth-1, False, alpha, beta, state_history, evaluate_func, caller)
@@ -334,6 +330,54 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
         beta = min(beta, evaluation)
         if beta <= alpha: break
     return minEval
+
+def mcts(root, player, state_history):
+    children = mcts_expand(root, player, state_history, 10)
+    for (move, state) in children:
+        mcts_simulate(state[0], player, state[1])
+
+def mcts_expand(root, player, state_history, depth):
+    children = dict()
+    children[root] = (None, (root, state_history))
+    valid_moves = root.get_valid_moves(n_player, children)
+    node_states = mcts_create_states(valid_moves, player, state_history)
+    children[node] = (move, node_states)
+
+def mcts_create_states(moves, player, state_history):
+    states = dict()
+
+    for move in moves:
+        state_copy = deepcopy(state)
+        history_copy = state_history
+        state_copy.move(move[0], move[1], history_copy)
+        history_copy.append(state_copy)
+        states[move] = (state_copy, history_copy)
+
+    return states
+
+def mcts_simulate(state, player, state_history):
+    moves = state.available_moves(player, state_history)
+    piece, move = moves[random.randint(0, len(moves) - 1)]
+    final = false
+    n_state = state
+    while not final:
+        state_copy = deepcopy(n_state)
+        history_copy = state_history
+        state_copy.move(move[0], move[1], history_copy)
+        if state_copy.is_final():
+            return evaluate_final(state_copy, player)
+
+    return
+
+def evaluate_final(state, player):
+    paths = self.board.get_paths()
+    for fork in paths:
+        if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
+            if Piece(3 - fork.get_status().value) == player:
+                return 1
+            else:
+                return -1  
+    return None
 
 def one_game() -> None:
     game_mode = parse_int_input("Choose your gamemode:\n"
