@@ -331,53 +331,69 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
         if beta <= alpha: break
     return minEval
 
-def mcts(root, player, state_history):
-    children = mcts_expand(root, player, state_history, 10)
-    for (move, state) in children:
-        mcts_simulate(state[0], player, state[1])
+def mcts(state, player, state_history, iteration_total=50, depth=3):
+    
+    mcts_root = MCTS_node(0, state, state_history, None, None)
 
-def mcts_expand(root, player, state_history, depth):
-    children = dict()
-    children[root] = (None, (root, state_history))
-    valid_moves = root.get_valid_moves(n_player, children)
-    node_states = mcts_create_states(valid_moves, player, state_history)
-    children[node] = (move, node_states)
+    mcts = MCTS(mcts_root, player)
 
-def mcts_create_states(moves, player, state_history):
-    states = dict()
+    mcts.populate_children(mcts_root, depth)
+    iteration = iteration_total
 
-    for move in moves:
-        state_copy = deepcopy(state)
-        history_copy = state_history
-        state_copy.move(move[0], move[1], history_copy)
-        history_copy.append(state_copy)
-        states[move] = (state_copy, history_copy)
+    while (iteration > 0):
+        if iteration > iteration_total/2:
+            leaf = mcts.traverse(True)        
+        else:
+            leaf = mcts.traverse(False)
 
-    return states
+        result = mcts.simulate(leaf)
+        mcts.back_propagate(leaf, result)
+        iteration -= 1
 
-def mcts_simulate(state, player, state_history):
-    moves = state.available_moves(player, state_history)
-    piece, move = moves[random.randint(0, len(moves) - 1)]
-    final = false
-    n_state = state
-    while not final:
-        state_copy = deepcopy(n_state)
-        history_copy = state_history
-        state_copy.move(move[0], move[1], history_copy)
-        if state_copy.is_final():
-            return evaluate_final(state_copy, player)
+    return mcts.best_choice()
 
-    return
+# def mcts_expand(root, player, state_history, depth):
+#     children = dict()
+#     children[root] = (None, (root, state_history))
+#     valid_moves = root.get_valid_moves(n_player, children)
+#     node_states = mcts_create_states(valid_moves, player, state_history)
+#     children[node] = (move, node_states)
 
-def evaluate_final(state, player):
-    paths = self.board.get_paths()
-    for fork in paths:
-        if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
-            if Piece(3 - fork.get_status().value) == player:
-                return 1
-            else:
-                return -1  
-    return None
+# def mcts_create_states(moves, player, state_history):
+#     states = dict()
+
+#     for move in moves:
+#         state_copy = deepcopy(state)
+#         history_copy = state_history
+#         state_copy.move(move[0], move[1], history_copy)
+#         history_copy.append(state_copy)
+#         states[move] = (state_copy, history_copy)
+
+#     return states
+
+# def mcts_simulate(state, player, state_history):
+#     moves = state.available_moves(player, state_history)
+#     piece, move = moves[random.randint(0, len(moves) - 1)]
+#     final = false
+#     n_state = state
+#     while not final:
+#         state_copy = deepcopy(n_state)
+#         history_copy = state_history
+#         state_copy.move(move[0], move[1], history_copy)
+#         if state_copy.is_final():
+#             return evaluate_final(state_copy, player)
+
+#     return
+
+# def evaluate_final(state, player):
+#     paths = self.board.get_paths()
+#     for fork in paths:
+#         if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
+#             if Piece(3 - fork.get_status().value) == player:
+#                 return 1
+#             else:
+#                 return -1  
+#     return None
 
 def one_game() -> None:
     game_mode = parse_int_input("Choose your gamemode:\n"
