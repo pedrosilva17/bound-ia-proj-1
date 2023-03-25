@@ -330,7 +330,7 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
         if beta <= alpha: break
     return minEval
 
-def execute_mcts(state, player, state_history, iteration_total=50, depth=3):
+def execute_mcts(state, player, state_history, iteration_total=50):
 
     mcts_root = MCTS_node(0, (state, state_history), None, None)
 
@@ -358,14 +358,12 @@ def execute_mcts(state, player, state_history, iteration_total=50, depth=3):
 
 # def mcts_create_states(moves, player, state_history):
 #     states = dict()
-
 #     for move in moves:
 #         state_copy = deepcopy(state)
 #         history_copy = state_history
 #         state_copy.move(move[0], move[1], history_copy)
 #         history_copy.append(state_copy)
 #         states[move] = (state_copy, history_copy)
-
 #     return states
 
 # def mcts_simulate(state, player, state_history):
@@ -379,7 +377,6 @@ def execute_mcts(state, player, state_history, iteration_total=50, depth=3):
 #         state_copy.move(move[0], move[1], history_copy)
 #         if state_copy.is_final():
 #             return evaluate_final(state_copy, player)
-
 #     return
 
 # def evaluate_final(state, player):
