@@ -144,10 +144,9 @@ class State:
                     moves.append((i, j.get_index()))
         return moves
     
-    def count_moves(self, player_piece: Piece):
-        return len(self.available_moves(player_piece))
-    
-    
+    def count_moves(self, player_piece: Piece, state_history: list):
+        return len(self.available_moves(player_piece, state_history))
+
     def list_moves(self, player_piece: Piece):
         player_path_status = [list(map(lambda fork: fork.get_status(), v)) for k, v in self.board.get_paths().items() if k.get_status() == player_piece]
         return [path.count(Piece.Empty) for path in player_path_status]
@@ -331,22 +330,20 @@ def minimax(state: State, depth: int,maximizing: bool, alpha: int, beta: int, st
         if beta <= alpha: break
     return minEval
 
-def mcts(state, player, state_history, iteration_total=50, depth=3):
-    
-    mcts_root = MCTS_node(0, state, state_history, None, None)
+def execute_mcts(state, player, state_history, iteration_total=50, depth=3):
+
+    mcts_root = MCTS_node(0, (state, state_history), None, None)
 
     mcts = MCTS(mcts_root, player)
 
-    mcts.populate_children(mcts_root, depth)
-    iteration = iteration_total
-
     while (iteration > 0):
-        if iteration > iteration_total/2:
-            leaf = mcts.traverse(True)        
-        else:
-            leaf = mcts.traverse(False)
-
+        # Select
+        node = mcts.select()
+        # Expand
+        leaf = mcts.expand(node)
+        # Simulate
         result = mcts.simulate(leaf)
+        # Back Propagate
         mcts.back_propagate(leaf, result)
         iteration -= 1
 
