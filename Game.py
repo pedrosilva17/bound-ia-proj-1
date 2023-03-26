@@ -111,6 +111,12 @@ class State:
                 self.winner = Piece(3 - fork.get_status().value)
                 return
 
+    def simulate_winner(self):
+        paths = self.board.get_paths()
+        for fork in paths:
+            if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
+                return Piece(3 - fork.get_status().value)
+
     def move(self, curr_index: int, move_index: int, state_history: list) -> None:
         # TODO
         # print(self.valid_move(curr_index, move_index, self.player_piece, state_history))
@@ -223,7 +229,7 @@ class Bound:
             case 2:
                 winner = self.game_loop(self.ask_move, self.execute_negamax_move)
             case 3:
-                winner = self.game_loop(self.execute_minimax_move, self.execute_minimax_move)
+                winner = self.game_loop(self.execute_mcts, self.execute_mcts)
 
         if self.player_1.get_piece() == winner:
             input("Winner: " + self.player_1.get_name())
@@ -245,6 +251,8 @@ class Bound:
             match player_func.__name__:
                 case "execute_minimax_move" | "execute_negamax_move":
                     player_func(self.evaluate_state_4, 3)
+                case "execute_mcts":
+                    player_func()
                 case _:
                     while not valid:
                         valid = player_func()
@@ -348,6 +356,32 @@ class Bound:
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)
 
+    def execute_mcts(self, iteration_total=20):
+        state_copy = deepcopy(self.state)
+        history_copy = deepcopy(self.state_history)
+
+        mcts_root = MCTS_node((state_copy, history_copy), None, None)
+
+        mcts = MCTS(mcts_root, self.state.get_player_piece())
+        iteration = iteration_total
+
+        while (iteration > 0):
+            # Select
+            node = mcts.select()
+            # Expand
+            leaf = mcts.expand(node)
+            # Simulate
+            result = mcts.simulate(leaf)
+            # Back Propagate
+            mcts.back_propagate(leaf, result)
+            iteration -= 1
+
+        best_move = mcts.best_choice()
+        print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
+        self.state.move(best_move.move[0], best_move.move[1], self.state_history)
+        self.state.update_winner()
+        state_copy = deepcopy(self.state)
+        self.state_history.append(state_copy)
 
 """
     def execute_negamax_move(self, evaluate_func, depth: int):
@@ -414,28 +448,6 @@ def negamax(state: State, depth: int, alpha: float, beta: float, state_history, 
         if beta <= alpha: break
     return evaluation
 """
-
-
-def execute_mcts(state, player, state_history, iteration_total=50):
-
-    mcts_root = MCTS_node(0, (state, state_history), None, None)
-
-    mcts = MCTS(mcts_root, player)
-    iteration = iteration_total
-
-    while (iteration > 0):
-        # Select
-        node = mcts.select()
-        # Expand
-        leaf = mcts.expand(node)
-        # Simulate
-        result = mcts.simulate(leaf)
-        # Back Propagate
-        mcts.back_propagate(leaf, result)
-        iteration -= 1
-
-    return mcts.best_choice()
-
 
 # def mcts_expand(root, player, state_history, depth):
 #     children = dict()

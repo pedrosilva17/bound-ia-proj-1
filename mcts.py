@@ -1,11 +1,13 @@
 import random
 import math
+from copy import deepcopy
+
 
 class MCTS:
     def __init__(self, root, player):
         self.root = root
         self.player = player
-        self.leaves = list(root)
+        self.leaves = [root]
 
     def get_children(self):
         return self.children
@@ -28,6 +30,58 @@ class MCTS:
     #         self.leaves.remove(node)
     #     return child
 
+    def select(self):
+        map(lambda x: x.update_ucb(), self.leaves)
+        filter(lambda x: check_children(x), self.leaves)
+
+        self.leaves.sort(key = lambda x: x.ucb, reverse=True)
+        return self.leaves[0]
+
+    def check_children(self, node):
+        if len(node.children) != node.max_children:
+            return True
+
+
+    def expand(self, node):
+
+        moves = node.state[0].available_moves(node.state[0].get_player_piece(), node.state[1])
+        rand = random.randint(0, len(moves)-1)
+        child = self.generate_node(moves[rand], node)
+        node.add_child(child)
+
+        if node.max_children != 0:
+            self.leaves.append(child)
+
+        if len(node.children) == node.max_children:
+            self.leaves.remove(node)
+
+        return child
+
+    def simulate(self, node):
+        end = False
+        while not end:
+            moves = node.state[0].available_moves(node.state[0].get_player_piece(), node.state[1])
+            rand = random.randint(0, len(moves)-1)
+            node = self.generate_node(moves[rand], node)
+            end = node.state[0].is_final()
+
+        if node.state[0].simulate_winner() == self.player:
+            return 1
+        else: 
+            return -1
+
+    def back_propagate(self, node, result):
+
+        if node.parent == None: return
+        node.update_value(result)
+        node.update_visits()
+        self.back_propagate(node.parent, result)
+
+    def best_choice(self):
+        self.root.children.sort(key = lambda x: x.value, reverse = True)
+        print([x.value for x in self.root.children])
+        return self.root.children[0]
+
     def generate_node(self, move, parent):
 
         state_copy = deepcopy(parent.state[0])
@@ -37,48 +91,6 @@ class MCTS:
 
         return MCTS_node((state_copy, history_copy), move, parent)
 
-    def select(self):
-        map(lambda x: x.update_ucb(), self.leaves)
-        return self.leaves.sort(lambda x: x.ucb)[0]
-
-    def expand(self, node):
-
-        moves = node.state.available_moves(node.state.get_player_piece(), node.state[1])
-        rand = random.randint(0, len(moves))
-        child = generate_node(moves[rand], node.state[1], node)
-        node.add_child(state)
-
-        if node.max_children != 0:
-            self.leaves.append(child)
-
-        if (node.children == node.max_children):
-            self.leaves.remove(node)
-
-        return child
-
-    def simulate(self, node):
-        end = false
-        while not end:
-            moves = node.state[0].available_moves(node.state[0].get_player_piece(), node.state[1])
-            rand = random.randint(0, len(moves))
-            node = generate_node(moves[rand], node)[0]
-            end = node.state[0].is_final()
-
-        if node.state[0].get_winner() == player:
-            return 1
-        else: 
-            return -1
-
-    def back_propagate(self, node, result):
-
-        if node.get_parent() == None: return
-        node.update_value(result)
-        node.update_visits(result)
-        back_propagate(node.get_parent(), result)
-
-    def best_choice(self):
-
-        return self.root.get_children().sort(lambda x: x.get_value())[0].get_move()
 
 class MCTS_node:
     def __init__(self, state, move, parent):
