@@ -229,7 +229,7 @@ class Bound:
             case 2:
                 winner = self.game_loop(self.ask_move, self.execute_negamax_move)
             case 3:
-                winner = self.game_loop(self.execute_mcts, self.execute_mcts)
+                winner = self.game_loop(self.execute_mcts, self.ask_move)
 
         if self.player_1.get_piece() == winner:
             input("Winner: " + self.player_1.get_name())
@@ -356,7 +356,7 @@ class Bound:
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)
 
-    def execute_mcts(self, iteration_total=20):
+    def execute_mcts(self, iteration_total=50):
         state_copy = deepcopy(self.state)
         history_copy = deepcopy(self.state_history)
 

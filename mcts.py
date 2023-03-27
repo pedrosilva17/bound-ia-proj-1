@@ -49,8 +49,7 @@ class MCTS:
         child = self.generate_node(moves[rand], node)
         node.add_child(child)
 
-        if node.max_children != 0:
-            self.leaves.append(child)
+        self.leaves.append(child)
 
         if len(node.children) == node.max_children:
             self.leaves.remove(node)
