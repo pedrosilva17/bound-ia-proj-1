@@ -55,12 +55,16 @@ class Board(Graph):
                 v3 = self.get_vertex(outer_length + 2 + i * 2)
                 self.add_edge(v1, v3)
             elif i in range(outer_length + 1, outer_length * 3 - 1, 2):
-                v3 = self.get_vertex(outer_length * 3 + 1 + (i - outer_length - 1) // 2)
+                v3 = self.get_vertex(outer_length * 3 + 1 +
+                                     (i - outer_length - 1) // 2)
                 self.add_edge(v1, v3)
 
         self.add_edge(self.get_vertex(outer_length - 1), self.get_vertex(0))
-        self.add_edge(self.get_vertex(outer_length * 3 - 1), self.get_vertex(outer_length))
-        self.add_edge(self.get_vertex(outer_length * 4 - 1), self.get_vertex(outer_length * 3))
+        self.add_edge(
+            self.get_vertex(outer_length * 3 - 1),
+            self.get_vertex(outer_length))
+        self.add_edge(self.get_vertex(outer_length * 4 - 1),
+                      self.get_vertex(outer_length * 3))
 
         self.outer_length = outer_length
         self.forks = self.vertex_list
@@ -120,16 +124,20 @@ class State:
     def move(self, curr_index: int, move_index: int, state_history: list) -> None:
         # TODO
         # print(self.valid_move(curr_index, move_index, self.player_piece, state_history))
-        if self.valid_move(curr_index, move_index, self.player_piece, state_history):
+        if self.valid_move(
+                curr_index, move_index, self.player_piece, state_history):
             self.board.get_fork(move_index).set_status(self.player_piece)
             self.board.get_fork(curr_index).set_status(Piece.Empty)
-            self.player_piece = Piece(3 - self.player_piece.value)  # Swap turns
+            self.player_piece = Piece(
+                3 - self.player_piece.value)  # Swap turns
         else:
             raise ValueError("Invalid move!")
 
         return self
 
-    def valid_move(self, curr_index: int, move_index: int, player_piece: Piece, state_history: list) -> bool:
+    def valid_move(
+            self, curr_index: int, move_index: int, player_piece: Piece,
+            state_history: list) -> bool:
         curr_fork = self.board.get_fork(curr_index)
         move_fork = self.board.get_fork(move_index)
 
@@ -137,7 +145,8 @@ class State:
                 and curr_fork.get_status() == player_piece
                 and move_fork.get_status() == Piece.Empty):
             state_copy = deepcopy(self)
-            state_copy.board.get_fork(move_index).set_status(state_copy.player_piece)
+            state_copy.board.get_fork(move_index).set_status(
+                state_copy.player_piece)
             state_copy.board.get_fork(curr_index).set_status(Piece.Empty)
 
             # print(state_history)
@@ -152,11 +161,14 @@ class State:
         else:
             return False
 
-    def available_moves(self, player_piece: Piece, state_history: list) -> list:
+    def available_moves(
+            self, player_piece: Piece, state_history: list) -> list:
         moves = []
         for i in self.get_player_piece_list(player_piece):
             for j in self.board.get_siblings(i):
-                if self.valid_move(i, j.get_index(), player_piece, state_history):
+                if self.valid_move(
+                        i, j.get_index(),
+                        player_piece, state_history):
                     moves.append((i, j.get_index()))
         return moves
 
@@ -164,12 +176,16 @@ class State:
         return len(self.available_moves(player_piece, state_history))
 
     def count_middle_pieces(self, player_piece: Piece):
-        return sum(self.get_player_piece_list(player_piece).count(i) for i in range(self.board.outer_length,
-                                                                                    self.board.outer_length * 4))
+        return sum(
+            self.get_player_piece_list(player_piece).count(i)
+            for i in range(
+                self.board.outer_length, self.board.outer_length * 4))
 
     def list_moves(self, player_piece: Piece):
-        player_path_status = [list(map(lambda fork: fork.get_status(), v)) for k, v in self.board.get_paths().items() if
-                              k.get_status() == player_piece]
+        player_path_status = [
+            list(map(lambda fork: fork.get_status(),
+                     v)) for k, v in self.board.get_paths().items()
+            if k.get_status() == player_piece]
         return [path.count(Piece.Empty) for path in player_path_status]
 
     def is_final(self):
@@ -188,7 +204,9 @@ class State:
 
 class Bound:
 
-    def __init__(self, player_1: Player, player_2: Player, outer_length: int, free_space: int) -> None:
+    def __init__(
+            self, player_1: Player, player_2: Player, outer_length: int,
+            free_space: int) -> None:
         self.state_history = []
         self.player_1 = player_1
         self.player_2 = player_2
@@ -205,19 +223,23 @@ class Bound:
     def place_pieces(self, free_space: int) -> None:
         if self.player_1.get_piece() == Piece.Red:
             for i in range(self.outer_length):
-                if i == free_space: continue
+                if i == free_space:
+                    continue
                 self.initial_board.get_fork(i).set_status(Piece.Red)
             for j in range(self.outer_length * 3, self.outer_length * 4):
                 if ((j == self.outer_length * 3 + free_space - 1)
-                        or (j == self.outer_length * 4 - 1 and free_space == 0)): continue
+                        or (j == self.outer_length * 4 - 1 and free_space == 0)):
+                    continue
                 self.initial_board.get_fork(j).set_status(Piece.Black)
         else:
             for i in range(self.outer_length * 3, self.outer_length * 4):
-                if i == free_space: continue
+                if i == free_space:
+                    continue
                 self.initial_board.get_fork(i).set_status(Piece.Black)
             for j in range(self.outer_length):
                 if ((j == free_space - self.outer_length * 3 + 1)
-                        or (j == 0 and free_space == self.outer_length * 4 - 1)): continue
+                        or (j == 0 and free_space == self.outer_length * 4 - 1)):
+                    continue
                 self.initial_board.get_fork(j).set_status(Piece.Red)
 
     def play(self, mode: int) -> Player:
@@ -227,9 +249,11 @@ class Bound:
             case 1:
                 winner = self.game_loop(self.ask_move, self.ask_move)
             case 2:
-                winner = self.game_loop(self.ask_move, self.execute_negamax_move)
+                winner = self.game_loop(
+                    self.ask_move, self.execute_minimax_move)
             case 3:
-                winner = self.game_loop(self.execute_mcts, self.ask_move)
+                winner = self.game_loop(
+                    self.execute_mcts, self.execute_minimax_move)
 
         if self.player_1.get_piece() == winner:
             input("Winner: " + self.player_1.get_name())
@@ -242,6 +266,7 @@ class Bound:
 
     def game_loop(self, player_func, next_player_func) -> Player:
         self.ui.render(self.state.get_board())
+        depth = 3
         while not self.state_history[-1].get_winner():
             valid = False
             # print(self.state.list_moves(self.state.get_player_piece()), self.state.list_moves(Piece(3 - self.state.get_player_piece().value)))
@@ -250,7 +275,11 @@ class Bound:
             # print(evaluate_state_3(self.state))
             match player_func.__name__:
                 case "execute_minimax_move" | "execute_negamax_move":
-                    player_func(self.evaluate_state_4, 3)
+                    player_func(self.evaluate_state_4, depth)
+                    if depth == 3:
+                        depth = 1
+                    else:
+                        depth = 3
                 case "execute_mcts":
                     player_func()
                 case _:
@@ -263,20 +292,24 @@ class Bound:
 
         return self.state.get_winner()
 
-    def available_moves(self, player_piece: Piece, state_history: list) -> list:
+    def available_moves(
+            self, player_piece: Piece, state_history: list) -> list:
         moves = []
         for i in self.state.get_player_piece_list(player_piece):
             for j in self.state.board.get_siblings(i):
-                if self.state.valid_move(i, j.get_index(), player_piece, state_history):
+                if self.state.valid_move(
+                        i, j.get_index(),
+                        player_piece, state_history):
                     moves.append((i, j.get_index()))
         moves = sorted(moves, key=lambda k: k[1], reverse=True)
         return moves
 
     def ask_move(self):
-        piece = parse_int_input(f"{self.state.get_player_piece().name}, What piece do you move?\n",
-                                0, self.state.get_board().get_outer_length() * 4 - 1)
-        move = parse_int_input("Where do you move it?\n",
-                               0, self.state.get_board().get_outer_length() * 4 - 1)
+        piece = parse_int_input(
+            f"{self.state.get_player_piece().name}, What piece do you move?\n",
+            0, self.state.get_board().get_outer_length() * 4 - 1)
+        move = parse_int_input("Where do you move it?\n", 0,
+                               self.state.get_board().get_outer_length() * 4 - 1)
         try:
             self.state.move(piece, move, self.state_history)
             self.state.update_winner()
@@ -288,7 +321,9 @@ class Bound:
             return False
 
     def random_move(self):
-        moves = self.available_moves(self.state.get_player_piece(), self.state_history)
+        moves = self.available_moves(
+            self.state.get_player_piece(),
+            self.state_history)
         piece, move = moves[random.randint(0, len(moves) - 1)]
         self.state.move(piece, move, self.state_history)
         self.state.update_winner()
@@ -297,8 +332,14 @@ class Bound:
         return True
 
     def evaluate_state_1(self, state: State, caller):
-        player = len(state.available_moves(state.get_player_piece(), self.state_history))
-        opponent = len(state.available_moves(state.get_opponent_piece(), self.state_history))
+        player = len(
+            state.available_moves(
+                state.get_player_piece(),
+                self.state_history))
+        opponent = len(
+            state.available_moves(
+                state.get_opponent_piece(),
+                self.state_history))
         value = player - opponent
         if opponent == 0:
             value = math.inf
@@ -317,15 +358,16 @@ class Bound:
         return value if caller == state.get_player_piece() else -value
 
     def evaluate_state_3(self, state: State, caller):
-        value = self.evaluate_state_1(state, caller) + self.evaluate_state_2(state, caller)
+        value = self.evaluate_state_1(
+            state, caller) + self.evaluate_state_2(state, caller)
         return value if caller == state.get_player_piece() else -value
 
     def evaluate_state_4(self, state: State, caller):
         player = numpy.prod(state.list_moves(state.get_player_piece()))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
         value = player - opponent + 3 * \
-                (state.count_middle_pieces(state.get_player_piece())
-                 - state.count_middle_pieces(state.get_opponent_piece()))
+            (state.count_middle_pieces(state.get_player_piece())
+             - state.count_middle_pieces(state.get_opponent_piece()))
         if opponent == 0:
             value = math.inf
         elif player == 0:
@@ -334,20 +376,26 @@ class Bound:
 
     def execute_minimax_move(self, evaluate_func, depth: int):
         move_eval_list = []
-        for move in self.state.available_moves(self.state.get_player_piece(), self.state_history):
+        for move in self.state.available_moves(
+                self.state.get_player_piece(),
+                self.state_history):
             history_copy = deepcopy(self.state_history)
             state_copy = deepcopy(self.state)
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
             # print(state_copy)
-            minimax_val = minimax(state_copy, depth, False, -math.inf, math.inf, history_copy, evaluate_func,
-                                  self.state.get_player_piece())
+            minimax_val = minimax(
+                state_copy, depth, False, -math.inf, math.inf, history_copy,
+                evaluate_func, self.state.get_player_piece())
             move_eval_list.append((move, minimax_val))
-            if minimax_val == math.inf: break
+            if minimax_val == math.inf:
+                break
 
-        move_eval_list = sorted(move_eval_list, key=lambda k: (k[1], k[0][1]), reverse=True)
-        # print(move_eval_list)
-        best_move = move_eval_list[0][0]
+        move_eval_list = sorted(
+            move_eval_list, key=lambda k: (k[1], k[0][1]), reverse=True)
+        move_eval_list = list(filter(lambda k: k[1] == move_eval_list[0][1], move_eval_list))
+        # print(move_eval_list)        
+        best_move = move_eval_list[random.randint(0, len(move_eval_list)-1)][0]
 
         # print(best_move[0], best_move[1])
         # print(self.state.valid_move(best_move[0], best_move[1], self.state.get_player_piece(), self.state_history))
@@ -378,10 +426,14 @@ class Bound:
 
         best_move = mcts.best_choice()
         print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
-        self.state.move(best_move.move[0], best_move.move[1], self.state_history)
+        self.state.move(
+            best_move.move[0],
+            best_move.move[1],
+            self.state_history)
         self.state.update_winner()
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)
+
 
 """
     def execute_negamax_move(self, evaluate_func, depth: int):
@@ -406,19 +458,27 @@ class Bound:
 """
 
 
-def minimax(state: State, depth: int, maximizing: bool, alpha: int, beta: int, state_history, evaluate_func, caller):
-    if depth == 0 or state.is_final(): return evaluate_func(state, caller)
+def minimax(
+        state: State, depth: int, maximizing: bool, alpha: int, beta: int,
+        state_history, evaluate_func, caller):
+    if depth == 0 or state.is_final():
+        return evaluate_func(state, caller)
     if maximizing:
         max_eval = -math.inf
-        for move in state.available_moves(state.get_player_piece(), state_history):
+        for move in state.available_moves(
+                state.get_player_piece(),
+                state_history):
             state_copy = deepcopy(state)
             history_copy = deepcopy(state_history)
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
-            evaluation = minimax(state_copy, depth - 1, False, alpha, beta, history_copy, evaluate_func, caller)
+            evaluation = minimax(
+                state_copy, depth - 1, False, alpha, beta, history_copy,
+                evaluate_func, caller)
             max_eval = max(max_eval, evaluation)
             alpha = max(alpha, evaluation)
-            if beta <= alpha: break
+            if beta <= alpha:
+                break
         return max_eval
 
     min_eval = math.inf
@@ -427,10 +487,13 @@ def minimax(state: State, depth: int, maximizing: bool, alpha: int, beta: int, s
         history_copy = deepcopy(state_history)
         state_copy.move(move[0], move[1], history_copy)
         history_copy.append(state_copy)
-        evaluation = minimax(state_copy, depth - 1, True, alpha, beta, history_copy, evaluate_func, caller)
+        evaluation = minimax(
+            state_copy, depth - 1, True, alpha, beta, history_copy,
+            evaluate_func, caller)
         min_eval = min(min_eval, evaluation)
         beta = min(beta, evaluation)
-        if beta <= alpha: break
+        if beta <= alpha:
+            break
     return min_eval
 
 
@@ -486,7 +549,7 @@ def negamax(state: State, depth: int, alpha: float, beta: float, state_history, 
 #             if Piece(3 - fork.get_status().value) == player:
 #                 return 1
 #             else:
-#                 return -1  
+#                 return -1
 #     return None
 
 
@@ -496,29 +559,36 @@ def one_game() -> None:
                                 "2- Human vs Computer\n"
                                 "3- Computer vs Computer\n",
                                 1, 3)
-    outer_length = parse_int_input("Choose a size for the board's outer circle.\n"
-                                   "The board's size will be 4 times that number.\n"
-                                   "Must be between 3 and 10, values between 5 and 8 work best.\n",
-                                   3, 10)
-    p1_name = re.sub(r'\W+', '', input("Player 1 - Insert your name. You will play first.\n"
-                                       "Only alphanumeric characters and underscores will be stored.\n"))
-    p2_name = re.sub(r'\W+', '', input("Player 2 - Insert your name.\n"
-                                       "Only alphanumeric characters and underscores will be stored.\n"))
+    outer_length = parse_int_input(
+        "Choose a size for the board's outer circle.\n"
+        "The board's size will be 4 times that number.\n"
+        "Must be between 3 and 10, values between 5 and 8 work best.\n", 3, 10)
+    p1_name = re.sub(
+        r'\W+', '',
+        input(
+            "Player 1 - Insert your name. You will play first.\n"
+            "Only alphanumeric characters and underscores will be stored.\n"))
+    p2_name = re.sub(
+        r'\W+', '',
+        input(
+            "Player 2 - Insert your name.\n"
+            "Only alphanumeric characters and underscores will be stored.\n"))
     p1_piece = parse_int_input("Player 1 - Choose your piece:\n"
                                "1 - Red, the outer pieces.\n"
                                "2 - Black, the inner pieces.\n",
                                1, 2)
     p2_piece = Piece(3 - p1_piece)
     if p1_piece == 1:
-        free_space = parse_int_input(f"Player 1 - Choose the free space in your piece placement.\n"
-                                     f"Keep in mind the Red pieces are placed on the outer circle.\n"
-                                     f"Valid empty spaces: 0-{outer_length - 1}\n",
-                                     0, outer_length - 1)
+        free_space = parse_int_input(
+            f"Player 1 - Choose the free space in your piece placement.\n"
+            f"Keep in mind the Red pieces are placed on the outer circle.\n"
+            f"Valid empty spaces: 0-{outer_length - 1}\n", 0, outer_length - 1)
     else:
-        free_space = parse_int_input(f"Player 1 - Choose the free space in your piece placement.\n"
-                                     f"Keep in mind the Black pieces are placed on the inner circle.\n"
-                                     f"Valid empty spaces: {outer_length * 3}-{outer_length * 4 - 1}\n",
-                                     outer_length * 3, outer_length * 4 - 1)
+        free_space = parse_int_input(
+            f"Player 1 - Choose the free space in your piece placement.\n"
+            f"Keep in mind the Black pieces are placed on the inner circle.\n"
+            f"Valid empty spaces: {outer_length * 3}-{outer_length * 4 - 1}\n",
+            outer_length * 3, outer_length * 4 - 1)
 
     p1 = Player(1, Piece(p1_piece), p1_name)
     p2 = Player(2, Piece(p2_piece), p2_name)
@@ -546,6 +616,7 @@ def run_games(n_games: int) -> None:
     for i in range(n_games):
         game = Bound(p1, p2, 5, 0)
         winner = game.play(3)
+        print(f"Last move: {game.state.get_opponent_piece()}")
         print(f"Winner: {winner.get_name()}")
         results[winner.get_name()] += 1
     print(results)
