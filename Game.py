@@ -6,6 +6,7 @@ import math
 import random
 import re
 from copy import deepcopy
+from typing import Callable
 
 import numpy
 
@@ -149,7 +150,6 @@ class State:
                 state_copy.player_piece)
             state_copy.board.get_fork(curr_index).set_status(Piece.Empty)
 
-            # print(state_history)
             state_list = state_history[:-1]
             state_list.reverse()
 
@@ -242,18 +242,51 @@ class Bound:
                     continue
                 self.initial_board.get_fork(j).set_status(Piece.Red)
 
-    def play(self, mode: int) -> Player:
+    def ask_bot(self, bot_1, bot_2) -> tuple[Callable, Callable, int, int]:
+        if bot_1 == 0:
+            bot_1 = parse_int_input(
+                "Choose the difficulty for computer 1, from 1 (Very Easy) to 4 (Hard):\n"
+                "1- The Clueless (Random moves)\n"
+                "2- The Statistician (MCTS depth 50)\n"
+                "3- The Greedy (Minimax depth 1)\n"
+                "4- The Omnissiah (Minimax depth 3)\n", 1, 4)
+        if bot_2 == 0:
+            bot_2 = parse_int_input(
+                "Choose the difficulty for computer 2, from 1 (Very Easy) to 4 (Hard):\n"
+                "1- The Clueless (Random moves)\n"
+                "2- The Statistician (MCTS depth 50)\n"
+                "3- The Greedy (Minimax depth 1)\n"
+                "4- The Omnissiah (Minimax depth 3)\n", 1, 4)
+        bot_1, depth_1 = self.choose_bot(bot_1)
+        bot_2, depth_2 = self.choose_bot(bot_2)
+        return bot_1, depth_1, bot_2, depth_2
+
+    def choose_bot(self, bot_choice: int) -> tuple[Callable, int]:
+        match bot_choice:
+            case 1:
+                return (self.random_move, 0)
+            case 2:
+                return (self.execute_mcts, 0)
+            case 3:
+                return (self.execute_minimax_move, 1)
+            case 4:
+                return (self.execute_minimax_move, 3)
+
+    def play(self, mode: int, bot_1: int = 0, bot_2: int = 0) -> Player:
         state_copy = deepcopy(self.state)
         self.state_history = [state_copy]
+
         match mode:
             case 1:
                 winner = self.game_loop(self.ask_move, self.ask_move)
             case 2:
+                bot_1, depth_1, _, _ = self.ask_bot(bot_1, 1)
                 winner = self.game_loop(
-                    self.ask_move, self.execute_minimax_move)
+                    self.ask_move, bot_1, next_player_depth=depth_1)
             case 3:
+                bot_1, depth_1, bot_2, depth_2 = self.ask_bot(bot_1, bot_2)
                 winner = self.game_loop(
-                    self.execute_mcts, self.execute_minimax_move)
+                    bot_1, bot_2, depth_1, depth_2)
 
         if self.player_1.get_piece() == winner:
             input("Winner: " + self.player_1.get_name())
@@ -264,9 +297,12 @@ class Bound:
             self.ui.quit()
             return self.player_2
 
-    def game_loop(self, player_func, next_player_func) -> Player:
+    def game_loop(
+            self, player_func, next_player_func, player_depth=0,
+            next_player_depth=0) -> Player:
+        self.ui.ui_init()
         self.ui.render(self.state.get_board())
-        depth = 3
+        print(player_depth, next_player_depth)
         while not self.state_history[-1].get_winner():
             valid = False
             # print(self.state.list_moves(self.state.get_player_piece()), self.state.list_moves(Piece(3 - self.state.get_player_piece().value)))
@@ -275,20 +311,19 @@ class Bound:
             # print(evaluate_state_3(self.state))
             match player_func.__name__:
                 case "execute_minimax_move" | "execute_negamax_move":
-                    player_func(self.evaluate_state_4, depth)
-                    if depth == 3:
-                        depth = 1
-                    else:
-                        depth = 3
+                    player_func(self.evaluate_state_4, player_depth)
                 case "execute_mcts":
                     player_func()
                 case _:
                     while not valid:
                         valid = player_func()
             player_func, next_player_func = next_player_func, player_func
+            player_depth, next_player_depth = next_player_depth, player_depth
             # print(self.state)
             # print(self.state_history)
             self.ui.render(self.state.get_board())
+            if len(self.state_history) > 20:
+                self.state_history = self.state_history[1:]
 
         return self.state.get_winner()
 
@@ -365,9 +400,8 @@ class Bound:
     def evaluate_state_4(self, state: State, caller):
         player = numpy.prod(state.list_moves(state.get_player_piece()))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
-        value = player - opponent + 3 * \
-            (state.count_middle_pieces(state.get_player_piece())
-             - state.count_middle_pieces(state.get_opponent_piece()))
+        value = player - opponent + 3 * (state.count_middle_pieces(
+            state.get_player_piece()) - state.count_middle_pieces(state.get_opponent_piece()))
         if opponent == 0:
             value = math.inf
         elif player == 0:
@@ -393,8 +427,11 @@ class Bound:
 
         move_eval_list = sorted(
             move_eval_list, key=lambda k: (k[1], k[0][1]), reverse=True)
-        move_eval_list = list(filter(lambda k: k[1] == move_eval_list[0][1], move_eval_list))
-        # print(move_eval_list)        
+        move_eval_list = list(
+            filter(
+                lambda k: k[1] == move_eval_list[0][1],
+                move_eval_list))
+        # print(move_eval_list)
         best_move = move_eval_list[random.randint(0, len(move_eval_list)-1)][0]
 
         # print(best_move[0], best_move[1])
@@ -433,29 +470,6 @@ class Bound:
         self.state.update_winner()
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)
-
-
-"""
-    def execute_negamax_move(self, evaluate_func, depth: int):
-        move_eval_list = []
-        for move in self.available_moves(self.state.get_player_piece(), self.state_history):
-            history_copy = self.state_history
-            state_copy = deepcopy(self.state)
-            state_copy.move(move[0], move[1], history_copy)
-            history_copy.append(state_copy)
-            negamax_val = negamax(state_copy, depth, -math.inf, math.inf, history_copy, evaluate_func,
-                                  self.state.get_player_piece())
-            move_eval_list.append((move, negamax_val))
-
-        move_eval_list = sorted(move_eval_list, key=lambda k: k[1], reverse=True)
-        print(move_eval_list)
-        best_move = move_eval_list[0][0]
-
-        self.state.move(best_move[0], best_move[1], self.state_history)
-        self.state.update_winner()
-        state_copy = deepcopy(self.state)
-        self.state_history.append(state_copy)
-"""
 
 
 def minimax(
@@ -497,62 +511,6 @@ def minimax(
     return min_eval
 
 
-"""
-def negamax(state: State, depth: int, alpha: float, beta: float, state_history, evaluate_func, caller):
-    if depth == 0 or state.is_final(): return evaluate_func(state, caller)
-    evaluation = -math.inf
-    for move in state.available_moves(state.get_player_piece(), state_history):
-        state_copy = deepcopy(state)
-        history_copy = state_history
-        state_copy.move(move[0], move[1], history_copy)
-        history_copy.append(state_copy)
-        evaluation = max(evaluation, -negamax(state_copy, depth - 1, -beta, -alpha, state_history, evaluate_func, caller))
-        alpha = max(alpha, evaluation)
-        if beta <= alpha: break
-    return evaluation
-"""
-
-# def mcts_expand(root, player, state_history, depth):
-#     children = dict()
-#     children[root] = (None, (root, state_history))
-#     valid_moves = root.get_valid_moves(n_player, children)
-#     node_states = mcts_create_states(valid_moves, player, state_history)
-#     children[node] = (move, node_states)
-
-# def mcts_create_states(moves, player, state_history):
-#     states = dict()
-#     for move in moves:
-#         state_copy = deepcopy(state)
-#         history_copy = state_history
-#         state_copy.move(move[0], move[1], history_copy)
-#         history_copy.append(state_copy)
-#         states[move] = (state_copy, history_copy)
-#     return states
-
-# def mcts_simulate(state, player, state_history):
-#     moves = state.available_moves(player, state_history)
-#     piece, move = moves[random.randint(0, len(moves) - 1)]
-#     final = false
-#     n_state = state
-#     while not final:
-#         state_copy = deepcopy(n_state)
-#         history_copy = state_history
-#         state_copy.move(move[0], move[1], history_copy)
-#         if state_copy.is_final():
-#             return evaluate_final(state_copy, player)
-#     return
-
-# def evaluate_final(state, player):
-#     paths = self.board.get_paths()
-#     for fork in paths:
-#         if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
-#             if Piece(3 - fork.get_status().value) == player:
-#                 return 1
-#             else:
-#                 return -1
-#     return None
-
-
 def one_game() -> None:
     game_mode = parse_int_input("Choose your gamemode:\n"
                                 "1- Human vs Human\n"
@@ -563,39 +521,45 @@ def one_game() -> None:
         "Choose a size for the board's outer circle.\n"
         "The board's size will be 4 times that number.\n"
         "Must be between 3 and 10, values between 5 and 8 work best.\n", 3, 10)
-    p1_name = re.sub(
-        r'\W+', '',
-        input(
-            "Player 1 - Insert your name. You will play first.\n"
-            "Only alphanumeric characters and underscores will be stored.\n"))
-    p2_name = re.sub(
-        r'\W+', '',
-        input(
-            "Player 2 - Insert your name.\n"
-            "Only alphanumeric characters and underscores will be stored.\n"))
-    p1_piece = parse_int_input("Player 1 - Choose your piece:\n"
-                               "1 - Red, the outer pieces.\n"
-                               "2 - Black, the inner pieces.\n",
-                               1, 2)
+    p1_name = "Computer 1"
+    p2_name = "Computer 2"
+    p1_piece = 1
+    free_space = 0
+    if game_mode < 3:
+        p1_name = re.sub(
+            r'\W+', '',
+            input(
+                "Player 1 - Insert your name. You will play first.\n"
+                "Only alphanumeric characters and underscores will be stored.\n"))
+        p1_piece = parse_int_input("Player 1 - Choose your piece:\n"
+                                   "1 - Red, the outer pieces.\n"
+                                   "2 - Black, the inner pieces.\n",
+                                   1, 2)
+        if p1_piece == 1:
+            free_space = parse_int_input(
+                f"Player 1 - Choose the free space in your piece placement.\n"
+                f"Keep in mind the Red pieces are placed on the outer circle.\n"
+                f"Valid empty spaces: 0-{outer_length - 1}\n", 0, outer_length - 1)
+        else:
+            free_space = parse_int_input(
+                f"Player 1 - Choose the free space in your piece placement.\n"
+                f"Keep in mind the Black pieces are placed on the inner circle.\n"
+                f"Valid empty spaces: {outer_length * 3}-{outer_length * 4 - 1}\n",
+                outer_length * 3, outer_length * 4 - 1)
+        if game_mode < 2:
+            p2_name = re.sub(
+                r'\W+', '',
+                input(
+                    "Player 2 - Insert your name.\n"
+                    "Only alphanumeric characters and underscores will be stored.\n"))
+    
     p2_piece = Piece(3 - p1_piece)
-    if p1_piece == 1:
-        free_space = parse_int_input(
-            f"Player 1 - Choose the free space in your piece placement.\n"
-            f"Keep in mind the Red pieces are placed on the outer circle.\n"
-            f"Valid empty spaces: 0-{outer_length - 1}\n", 0, outer_length - 1)
-    else:
-        free_space = parse_int_input(
-            f"Player 1 - Choose the free space in your piece placement.\n"
-            f"Keep in mind the Black pieces are placed on the inner circle.\n"
-            f"Valid empty spaces: {outer_length * 3}-{outer_length * 4 - 1}\n",
-            outer_length * 3, outer_length * 4 - 1)
-
     p1 = Player(1, Piece(p1_piece), p1_name)
     p2 = Player(2, Piece(p2_piece), p2_name)
     game = Bound(p1, p2, outer_length, free_space)
     run = True
     while run:
-        winner = game.play(game_mode)
+        game.play(game_mode)
         run = False
 
 
@@ -605,18 +569,19 @@ def example():
     game = Bound(p1, p2, 5, 0)
     run = True
     while run:
-        winner = game.play(3)
+        game.play(3)
         run = False
 
 
-def run_games(n_games: int) -> None:
+def run_games() -> None:
+    n_games = parse_int_input("How many games do you want to run?")
     p1 = Player(1, Piece(Piece.Red), "Red")
     p2 = Player(2, Piece(Piece.Black), "Black")
     results = {"Red": 0, "Black": 0}
     for i in range(n_games):
         game = Bound(p1, p2, 5, 0)
-        winner = game.play(3)
-        print(f"Last move: {game.state.get_opponent_piece()}")
+        winner = game.play(3, 1, 1)
+        # print(f"Last move: {game.state.get_opponent_piece()}")
         print(f"Winner: {winner.get_name()}")
         results[winner.get_name()] += 1
     print(results)

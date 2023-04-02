@@ -4,7 +4,7 @@ from constants import COLOR_DICT
 
 class Interface:
 
-    def __init__(self):            
+    def __init__(self):    
         self.DEFAULT_WIDTH = 800
         self.DEFAULT_HEIGHT = 750
         self.CENTER_X = self.DEFAULT_WIDTH/2
@@ -12,7 +12,9 @@ class Interface:
         self.OUTER_RADIUS = self.DEFAULT_HEIGHT-520
         self.OUTER_MIDDLE_RADIUS = self.OUTER_RADIUS - 70
         self.INNER_MIDDLE_RADIUS = self.OUTER_MIDDLE_RADIUS - 70
-        self.INNER_RADIUS =  self.INNER_MIDDLE_RADIUS - 70
+        self.INNER_RADIUS = self.INNER_MIDDLE_RADIUS - 70   
+
+    def ui_init(self):
         pg.init()
         self.bg_image = pg.image.load("./assets/bg-sprite.png")
         self.screen = pg.display.set_mode((self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT))

@@ -16,7 +16,7 @@ if __name__ == "__main__":
             case 1:
                 Game.one_game()
             case 2:
-                Game.run_games(10)
+                Game.run_games()
             case 3:
                 Game.example()
 

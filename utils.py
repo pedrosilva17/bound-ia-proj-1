@@ -1,4 +1,4 @@
-def parse_int_input(message: str, lower_bound: int = 0, upper_bound: int = 999) -> int:
+def parse_int_input(message: str, lower_bound: int = 0, upper_bound: int = 10000) -> int:
     while True:
         try:
             num = int(input(message))
