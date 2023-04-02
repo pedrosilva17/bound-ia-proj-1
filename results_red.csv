@@ -1,0 +1,8 @@
+R-B,RANDOM,MCTS,MINIMAX1,MINIMAX3
+RANDOM,5190-4810,.,0-100,.
+MCTS,.,.,.,.
+MINIMAX1,100-0,.,.,0-1
+MINIMAX3,.,.,1-0,.
+
+Heuristic: 4 vs 4
+Start: Red

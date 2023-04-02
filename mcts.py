@@ -78,7 +78,7 @@ class MCTS:
 
     def best_choice(self):
         self.root.children.sort(key = lambda x: x.value, reverse = True)
-        print([x.value for x in self.root.children])
+        # print([x.value for x in self.root.children])
         return self.root.children[0]
 
     def generate_node(self, move, parent):

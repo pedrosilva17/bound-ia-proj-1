@@ -16,7 +16,8 @@ if __name__ == "__main__":
             case 1:
                 Game.one_game()
             case 2:
-                Game.run_games()
+                n_games = parse_int_input("How many games do you want to run?")
+                Game.run_games(n_games)
             case 3:
                 Game.example()
 

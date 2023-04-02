@@ -1,7 +1,7 @@
 #
 # Controlar board states para evitar stalemates
 #
-
+import time
 import math
 import random
 import re
@@ -213,7 +213,7 @@ class Bound:
         self.outer_length = outer_length
 
         self.state = State(self.player_1, Board(outer_length))
-        self.ui = Interface()
+        # self.ui = Interface()
         self.initial_board = self.state.get_board()
         self.place_pieces(free_space)
 
@@ -289,20 +289,21 @@ class Bound:
                     bot_1, bot_2, depth_1, depth_2)
 
         if self.player_1.get_piece() == winner:
-            input("Winner: " + self.player_1.get_name())
-            self.ui.quit()
+            # input("Winner: " + self.player_1.get_name())
+            # self.ui.quit()
             return self.player_1
         else:
-            input("Winner: " + self.player_2.get_name())
-            self.ui.quit()
+            # input("Winner: " + self.player_2.get_name())
+            # self.ui.quit()
             return self.player_2
 
     def game_loop(
             self, player_func, next_player_func, player_depth=0,
             next_player_depth=0) -> Player:
-        self.ui.ui_init()
-        self.ui.render(self.state.get_board())
-        print(player_depth, next_player_depth)
+        # self.ui.ui_init()
+        # self.ui.render(self.state.get_board())
+        eval_func, next_eval_func = self.evaluate_state_4, self.evaluate_state_4
+        # print(player_depth, next_player_depth)
         while not self.state_history[-1].get_winner():
             valid = False
             # print(self.state.list_moves(self.state.get_player_piece()), self.state.list_moves(Piece(3 - self.state.get_player_piece().value)))
@@ -310,8 +311,9 @@ class Bound:
             # print(evaluate_state_2(self.state))
             # print(evaluate_state_3(self.state))
             match player_func.__name__:
-                case "execute_minimax_move" | "execute_negamax_move":
-                    player_func(self.evaluate_state_4, player_depth)
+                case "execute_minimax_move":
+                    player_func(eval_func, player_depth)
+                    eval_func, next_eval_func = next_eval_func, eval_func
                 case "execute_mcts":
                     player_func()
                 case _:
@@ -321,7 +323,7 @@ class Bound:
             player_depth, next_player_depth = next_player_depth, player_depth
             # print(self.state)
             # print(self.state_history)
-            self.ui.render(self.state.get_board())
+            # self.ui.render(self.state.get_board())
             if len(self.state_history) > 20:
                 self.state_history = self.state_history[1:]
 
@@ -400,8 +402,8 @@ class Bound:
     def evaluate_state_4(self, state: State, caller):
         player = numpy.prod(state.list_moves(state.get_player_piece()))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
-        value = player - opponent + 3 * (state.count_middle_pieces(
-            state.get_player_piece()) - state.count_middle_pieces(state.get_opponent_piece()))
+        value = player - opponent + state.count_middle_pieces(
+            state.get_player_piece()) - state.count_middle_pieces(state.get_opponent_piece())
         if opponent == 0:
             value = math.inf
         elif player == 0:
@@ -462,7 +464,7 @@ class Bound:
             iteration -= 1
 
         best_move = mcts.best_choice()
-        print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
+        # print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
         self.state.move(
             best_move.move[0],
             best_move.move[1],
@@ -529,7 +531,7 @@ def one_game() -> None:
         p1_name = re.sub(
             r'\W+', '',
             input(
-                "Player 1 - Insert your name. You will play first.\n"
+                "Player 1 - Insert your n        print(len(range(self.outer_length * 3, self.outer_length * 4)))ame. You will play first.\n"
                 "Only alphanumeric characters and underscores will be stored.\n"))
         p1_piece = parse_int_input("Player 1 - Choose your piece:\n"
                                    "1 - Red, the outer pieces.\n"
@@ -552,7 +554,7 @@ def one_game() -> None:
                 input(
                     "Player 2 - Insert your name.\n"
                     "Only alphanumeric characters and underscores will be stored.\n"))
-    
+
     p2_piece = Piece(3 - p1_piece)
     p1 = Player(1, Piece(p1_piece), p1_name)
     p2 = Player(2, Piece(p2_piece), p2_name)
@@ -573,15 +575,19 @@ def example():
         run = False
 
 
-def run_games() -> None:
-    n_games = parse_int_input("How many games do you want to run?")
+def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1, bot_2: int = 2) -> dict:
     p1 = Player(1, Piece(Piece.Red), "Red")
     p2 = Player(2, Piece(Piece.Black), "Black")
     results = {"Red": 0, "Black": 0}
     for i in range(n_games):
-        game = Bound(p1, p2, 5, 0)
-        winner = game.play(3, 1, 1)
+        if rev_start_order:
+            game = Bound(p2, p1, 5, 19)
+        else:
+            game = Bound(p1, p2, 5, 0)
+        winner = game.play(3, bot_1, bot_2)
         # print(f"Last move: {game.state.get_opponent_piece()}")
         print(f"Winner: {winner.get_name()}")
         results[winner.get_name()] += 1
+        # print(i)
     print(results)
+    return results
