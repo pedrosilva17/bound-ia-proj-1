@@ -18,7 +18,7 @@ class MCTS:
     #         if random:
     #             node = node.get_children()[random.randint(0, len(node.get_children()))]
     #         else:
-    #             node = node.get_children().sort(lambda x: x.get_value())[0]  
+    #             node = node.get_children().sort(lambda x: x.get_value())[0]
     #     return node
 
     # def populate_children(self, node):
@@ -34,17 +34,17 @@ class MCTS:
         map(lambda x: x.update_ucb(), self.leaves)
         filter(lambda x: check_children(x), self.leaves)
 
-        self.leaves.sort(key = lambda x: x.ucb, reverse=True)
+        self.leaves.sort(key=lambda x: x.ucb, reverse=True)
         return self.leaves[0]
 
     def check_children(self, node):
         if len(node.children) != node.max_children:
             return True
 
-
     def expand(self, node):
 
-        moves = node.state[0].available_moves(node.state[0].get_player_piece(), node.state[1])
+        moves = node.state[0].available_moves(
+            node.state[0].get_player_piece(), node.state[1])
         rand = random.randint(0, len(moves)-1)
         child = self.generate_node(moves[rand], node)
         node.add_child(child)
@@ -59,32 +59,34 @@ class MCTS:
     def simulate(self, node):
         end = False
         while not end:
-            moves = node.state[0].available_moves(node.state[0].get_player_piece(), node.state[1])
+            moves = node.state[0].available_moves(
+                node.state[0].get_player_piece(), node.state[1])
             rand = random.randint(0, len(moves)-1)
             node = self.generate_node(moves[rand], node)
             end = node.state[0].is_final()
 
         if node.state[0].simulate_winner() == self.player:
             return 1
-        else: 
+        else:
             return -1
 
     def back_propagate(self, node, result):
 
-        if node.parent == None: return
+        if node.parent == None:
+            return
         node.update_value(result)
         node.update_visits()
         self.back_propagate(node.parent, result)
 
     def best_choice(self):
-        self.root.children.sort(key = lambda x: x.value, reverse = True)
+        self.root.children.sort(key=lambda x: x.value, reverse=True)
         # print([x.value for x in self.root.children])
         return self.root.children[0]
 
     def generate_node(self, move, parent):
 
         state_copy = deepcopy(parent.state[0])
-        history_copy = parent.state[1]
+        history_copy = deepcopy(parent.state[1])
         state_copy.move(move[0], move[1], history_copy)
         history_copy.append(state_copy)
 
@@ -96,7 +98,8 @@ class MCTS_node:
         self.state = state
         self.move = move
         self.parent = parent
-        self.max_children = state[0].count_moves(state[0].get_player_piece(), state[1])
+        self.max_children = state[0].count_moves(
+            state[0].get_player_piece(), state[1])
 
         self.visits = 0
         self.value = 0
@@ -119,4 +122,3 @@ class MCTS_node:
 
     def add_child(self, child):
         self.children.append(child)
-        

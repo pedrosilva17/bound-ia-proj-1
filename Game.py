@@ -213,7 +213,7 @@ class Bound:
         self.outer_length = outer_length
 
         self.state = State(self.player_1, Board(outer_length))
-        # self.ui = Interface()
+        self.ui = Interface()
         self.initial_board = self.state.get_board()
         self.place_pieces(free_space)
 
@@ -289,19 +289,19 @@ class Bound:
                     bot_1, bot_2, depth_1, depth_2)
 
         if self.player_1.get_piece() == winner:
-            # input("Winner: " + self.player_1.get_name())
-            # self.ui.quit()
+            input("Winner: " + self.player_1.get_name())
+            self.ui.quit()
             return self.player_1
         else:
-            # input("Winner: " + self.player_2.get_name())
-            # self.ui.quit()
+            input("Winner: " + self.player_2.get_name())
+            self.ui.quit()
             return self.player_2
 
     def game_loop(
             self, player_func, next_player_func, player_depth=0,
             next_player_depth=0) -> Player:
-        # self.ui.ui_init()
-        # self.ui.render(self.state.get_board())
+        self.ui.ui_init()
+        self.ui.render(self.state.get_board())
         eval_func, next_eval_func = self.evaluate_state_4, self.evaluate_state_4
         # print(player_depth, next_player_depth)
         while not self.state_history[-1].get_winner():
@@ -323,7 +323,7 @@ class Bound:
             player_depth, next_player_depth = next_player_depth, player_depth
             # print(self.state)
             # print(self.state_history)
-            # self.ui.render(self.state.get_board())
+            self.ui.render(self.state.get_board())
             if len(self.state_history) > 20:
                 self.state_history = self.state_history[1:]
 
@@ -586,8 +586,8 @@ def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1,
             game = Bound(p1, p2, 5, 0)
         winner = game.play(3, bot_1, bot_2)
         # print(f"Last move: {game.state.get_opponent_piece()}")
-        print(f"Winner: {winner.get_name()}")
+        # print(f"Winner: {winner.get_name()}")
         results[winner.get_name()] += 1
-        # print(i)
+        print(i)
     print(results)
     return results
