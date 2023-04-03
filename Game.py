@@ -240,8 +240,6 @@ class Bound:
                 return (self.execute_minimax_move, 1)
             case 4:
                 return (self.execute_minimax_move, 3)
-            case 5:
-                return (self.execute_minimax_move, 5)
 
     def play(self, mode: int, bot_1: int = 0, bot_2: int = 0) -> Player:
         state_copy = deepcopy(self.state)
