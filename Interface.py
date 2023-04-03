@@ -34,9 +34,9 @@ class Interface:
 
 
     def vertex_positioning(self, board):
-        ring_size = int(len(board.get_forks())/4)
+        ring_size = int(len(board.forks)/4)
         angle = (2*math.pi)/ring_size
-        vertex_list = [e.get_index() for (f,e) in board.get_forks().items()]
+        vertex_list = [e.index for (f,e) in board.forks.items()]
         outer = vertex_list[0:ring_size]
         del vertex_list[0:ring_size]
         inner = vertex_list[-ring_size:]
@@ -63,15 +63,15 @@ class Interface:
         self.screen.blit(self.bg_image, (0,0))
         index = 0
         font = pg.font.SysFont('arial', 9)
-        for (p,e) in board.get_paths().items():
+        for (p,e) in board.paths.items():
             for edge in e:
-                pg.draw.line(self.screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1], 2)
+                pg.draw.line(self.screen, (255,255,255), vertex_list[p.index][1], vertex_list[edge.index][1], 2)
         for (v, pos) in vertex_list:
-            if board.get_fork(v).get_status().name == "Empty":
-                pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 10)
+            if board.get_fork(v).status.name == "Empty":
+                pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).status.name], pos, 10)
             else:
-                pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 15)
-            if board.get_fork(v).get_status().name != "Empty": 
+                pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).status.name], pos, 15)
+            if board.get_fork(v).status.name != "Empty": 
                 textColor = (255,255,255)
             else:
                 textColor = (0, 0, 0)

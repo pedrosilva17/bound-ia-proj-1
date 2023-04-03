@@ -4,14 +4,6 @@ class Vertex:
     def __init__(self, index: int, status: Piece = Piece.Empty):
         self.index = index
         self.status = status
-        
-    # Getters
-        
-    def get_index(self) -> int:
-        return self.index
-
-    def get_status(self) -> Piece:
-        return self.status
     
     # Setters
     
@@ -91,9 +83,9 @@ class Graph:
         Args:
             vertex (Vertex): _description_
         """
-        if vertex.get_index() not in self.vertex_list:
+        if vertex.index not in self.vertex_list:
             self.adj_list[vertex] = []
-            self.vertex_list[vertex.get_index()] = vertex
+            self.vertex_list[vertex.index] = vertex
             
     def add_edge(self, v1: Vertex, v2: Vertex):
         """_summary_

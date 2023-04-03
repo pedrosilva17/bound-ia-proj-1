@@ -27,17 +27,8 @@ class Player:
         else:
             self.name = name
 
-    def get_index(self):
-        return self.index
-
-    def get_piece(self):
-        return self.piece
-
     def get_opponent_piece(self):
         return Piece(3 - self.piece.value)
-
-    def get_name(self):
-        return self.name
 
     def __repr__(self):
         return self.name
@@ -72,17 +63,8 @@ class Board(Graph):
         self.forks = self.vertex_list
         self.paths = self.adj_list
 
-    def get_outer_length(self) -> int:
-        return self.outer_length
-
     def get_fork(self, index: int) -> Vertex:
         return super().get_vertex(index)
-
-    def get_paths(self) -> dict:
-        return self.paths
-
-    def get_forks(self) -> dict:
-        return self.forks
 
     def __repr__(self):
         return super().__repr__()
@@ -92,36 +74,21 @@ class State:
 
     def __init__(self, player: Player, board: Board = Board(5)) -> None:
         self.board = board
-        self.player_piece = player.get_piece()
+        self.player_piece = player.piece
         self.winner = None
 
-    def get_board(self):
-        return self.board
-
-    def get_player_piece(self):
-        return self.player_piece
-
     def get_player_piece_list(self, player_piece: Piece):
-        return [i for i in self.board.get_forks() if self.board.get_fork(i).get_status() == player_piece]
+        return [i for i in self.board.forks if self.board.get_fork(i).status == player_piece]
 
     def get_opponent_piece(self):
         return Piece(3 - self.player_piece.value)
 
-    def get_winner(self) -> Player:
-        return self.winner
-
     def update_winner(self):
-        paths = self.board.get_paths()
+        paths = self.board.paths
         for fork in paths:
-            if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
-                self.winner = Piece(3 - fork.get_status().value)
+            if Piece.Empty not in [f.status for f in paths[fork]] and fork.status != Piece.Empty:
+                self.winner = Piece(3 - fork.status.value)
                 return
-
-    def simulate_winner(self):
-        paths = self.board.get_paths()
-        for fork in paths:
-            if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
-                return Piece(3 - fork.get_status().value)
 
     def move(self, curr_index: int, move_index: int, state_history: list) -> None:
         # print(self.valid_move(curr_index, move_index, self.player_piece, state_history))
@@ -142,9 +109,9 @@ class State:
         curr_fork = self.board.get_fork(curr_index)
         move_fork = self.board.get_fork(move_index)
 
-        if (move_fork in self.board.get_paths()[curr_fork]
-                and curr_fork.get_status() == player_piece
-                and move_fork.get_status() == Piece.Empty):
+        if (move_fork in self.board.paths[curr_fork]
+                and curr_fork.status == player_piece
+                and move_fork.status == Piece.Empty):
             state_copy = deepcopy(self)
             state_copy.board.get_fork(move_index).set_status(
                 state_copy.player_piece)
@@ -167,9 +134,9 @@ class State:
         for i in self.get_player_piece_list(player_piece):
             for j in self.board.get_siblings(i):
                 if self.valid_move(
-                        i, j.get_index(),
+                        i, j.index,
                         player_piece, state_history):
-                    moves.append((i, j.get_index()))
+                    moves.append((i, j.index))
         return moves
 
     def count_moves(self, player_piece: Piece, state_history: list):
@@ -183,15 +150,15 @@ class State:
 
     def list_moves(self, player_piece: Piece):
         player_path_status = [
-            list(map(lambda fork: fork.get_status(),
-                     v)) for k, v in self.board.get_paths().items()
-            if k.get_status() == player_piece]
+            list(map(lambda fork: fork.status,
+                     v)) for k, v in self.board.paths.items()
+            if k.status == player_piece]
         return [path.count(Piece.Empty) for path in player_path_status]
 
     def is_final(self):
-        paths = self.board.get_paths()
+        paths = self.board.paths
         for fork in paths:
-            if Piece.Empty not in [f.get_status() for f in paths[fork]] and fork.get_status() != Piece.Empty:
+            if Piece.Empty not in [f.status for f in paths[fork]] and fork.status != Piece.Empty:
                 return True
         return False
 
@@ -214,14 +181,11 @@ class Bound:
 
         self.state = State(self.player_1, Board(outer_length))
         self.ui = Interface()
-        self.initial_board = self.state.get_board()
+        self.initial_board = self.state.board
         self.place_pieces(free_space)
 
-    def get_state(self) -> State:
-        return self.state
-
     def place_pieces(self, free_space: int) -> None:
-        if self.player_1.get_piece() == Piece.Red:
+        if self.player_1.piece == Piece.Red:
             for i in range(self.outer_length):
                 if i == free_space:
                     continue
@@ -292,12 +256,14 @@ class Bound:
                 winner = self.game_loop(
                     bot_1, bot_2, depth_1, depth_2)
 
-        if self.player_1.get_piece() == winner:
-            input("Winner: " + self.player_1.get_name())
+        if self.player_1.piece == winner:
+            input(
+                f"Winner: {self.player_1.name} ({self.player_1.piece.name})")
             self.ui.quit()
             return self.player_1
         else:
-            input("Winner: " + self.player_2.get_name())
+            input(
+                f"Winner: {self.player_2.name} ({self.player_2.piece.name})")
             self.ui.quit()
             return self.player_2
 
@@ -305,12 +271,12 @@ class Bound:
             self, player_func, next_player_func, player_depth=0,
             next_player_depth=0) -> Player:
         self.ui.ui_init()
-        self.ui.render(self.state.get_board())
+        self.ui.render(self.state.board)
         eval_func, next_eval_func = self.evaluate_state_4, self.evaluate_state_4
         # print(player_depth, next_player_depth)
-        while not self.state_history[-1].get_winner():
+        while not self.state_history[-1].winner:
             valid = False
-            # print(self.state.list_moves(self.state.get_player_piece()), self.state.list_moves(Piece(3 - self.state.get_player_piece().value)))
+            # print(self.state.list_moves(self.state.player_piece), self.state.list_moves(Piece(3 - self.state.player_piece.value)))
             # print(evaluate_state_1(self.state))
             # print(evaluate_state_2(self.state))
             # print(evaluate_state_3(self.state))
@@ -327,11 +293,11 @@ class Bound:
             player_depth, next_player_depth = next_player_depth, player_depth
             # print(self.state)
             # print(self.state_history)
-            self.ui.render(self.state.get_board())
+            self.ui.render(self.state.board)
             if len(self.state_history) > 20:
                 self.state_history = self.state_history[1:]
 
-        return self.state.get_winner()
+        return self.state.winner
 
     def available_moves(
             self, player_piece: Piece, state_history: list) -> list:
@@ -339,18 +305,18 @@ class Bound:
         for i in self.state.get_player_piece_list(player_piece):
             for j in self.state.board.get_siblings(i):
                 if self.state.valid_move(
-                        i, j.get_index(),
+                        i, j.index,
                         player_piece, state_history):
-                    moves.append((i, j.get_index()))
+                    moves.append((i, j.index))
         moves = sorted(moves, key=lambda k: k[1], reverse=True)
         return moves
 
     def ask_move(self):
         piece = parse_int_input(
-            f"{self.state.get_player_piece().name}, What piece do you move?\n",
-            0, self.state.get_board().get_outer_length() * 4 - 1)
+            f"{self.state.player_piece.name}, What piece do you move?\n",
+            0, self.state.board.outer_length * 4 - 1)
         move = parse_int_input("Where do you move it?\n", 0,
-                               self.state.get_board().get_outer_length() * 4 - 1)
+                               self.state.board.outer_length * 4 - 1)
         try:
             self.state.move(piece, move, self.state_history)
             self.state.update_winner()
@@ -363,7 +329,7 @@ class Bound:
 
     def random_move(self):
         moves = self.available_moves(
-            self.state.get_player_piece(),
+            self.state.player_piece,
             self.state_history)
         piece, move = moves[random.randint(0, len(moves) - 1)]
         self.state.move(piece, move, self.state_history)
@@ -375,7 +341,7 @@ class Bound:
     def evaluate_state_1(self, state: State, caller):
         player = len(
             state.available_moves(
-                state.get_player_piece(),
+                state.player_piece,
                 self.state_history))
         opponent = len(
             state.available_moves(
@@ -386,38 +352,38 @@ class Bound:
             value = math.inf
         elif player == 0:
             value = -math.inf
-        return value if caller == state.get_player_piece() else -value
+        return value if caller == state.player_piece else -value
 
     def evaluate_state_2(self, state: State, caller):
-        player = numpy.prod(state.list_moves(state.get_player_piece()))
+        player = numpy.prod(state.list_moves(state.player_piece))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
         value = player - opponent
         if opponent == 0:
             value = math.inf
         elif player == 0:
             value = -math.inf
-        return value if caller == state.get_player_piece() else -value
+        return value if caller == state.player_piece else -value
 
     def evaluate_state_3(self, state: State, caller):
         value = self.evaluate_state_1(
             state, caller) + self.evaluate_state_2(state, caller)
-        return value if caller == state.get_player_piece() else -value
+        return value if caller == state.player_piece else -value
 
     def evaluate_state_4(self, state: State, caller):
-        player = numpy.prod(state.list_moves(state.get_player_piece()))
+        player = numpy.prod(state.list_moves(state.player_piece))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
         value = player - opponent + state.count_middle_pieces(
-            state.get_player_piece()) - state.count_middle_pieces(state.get_opponent_piece())
+            state.player_piece) - state.count_middle_pieces(state.get_opponent_piece())
         if opponent == 0:
             value = math.inf
         elif player == 0:
             value = -math.inf
-        return value if caller == state.get_player_piece() else -value
+        return value if caller == state.player_piece else -value
 
     def execute_minimax_move(self, evaluate_func, depth: int):
         move_eval_list = []
         for move in self.state.available_moves(
-                self.state.get_player_piece(),
+                self.state.player_piece,
                 self.state_history):
             history_copy = deepcopy(self.state_history)
             state_copy = deepcopy(self.state)
@@ -426,7 +392,7 @@ class Bound:
             # print(state_copy)
             minimax_val = minimax(
                 state_copy, depth, False, -math.inf, math.inf, history_copy,
-                evaluate_func, self.state.get_player_piece())
+                evaluate_func, self.state.player_piece)
             move_eval_list.append((move, minimax_val))
             if minimax_val == math.inf:
                 break
@@ -441,7 +407,7 @@ class Bound:
         best_move = move_eval_list[random.randint(0, len(move_eval_list)-1)][0]
 
         # print(best_move[0], best_move[1])
-        # print(self.state.valid_move(best_move[0], best_move[1], self.state.get_player_piece(), self.state_history))
+        # print(self.state.valid_move(best_move[0], best_move[1], self.state.player_piece, self.state_history))
         print("Best Move: ", best_move)
         self.state.move(best_move[0], best_move[1], self.state_history)
         self.state.update_winner()
@@ -454,7 +420,7 @@ class Bound:
 
         mcts_root = MCTS_node((state_copy, history_copy), None, None)
 
-        mcts = MCTS(mcts_root, self.state.get_player_piece())
+        mcts = MCTS(mcts_root, self.state.player_piece)
         iteration = iteration_total
 
         while (iteration > 0):
@@ -487,7 +453,7 @@ def minimax(
     if maximizing:
         max_eval = -math.inf
         for move in state.available_moves(
-                state.get_player_piece(),
+                state.player_piece,
                 state_history):
             state_copy = deepcopy(state)
             history_copy = deepcopy(state_history)
@@ -503,7 +469,7 @@ def minimax(
         return max_eval
 
     min_eval = math.inf
-    for move in state.available_moves(state.get_player_piece(), state_history):
+    for move in state.available_moves(state.player_piece, state_history):
         state_copy = deepcopy(state)
         history_copy = deepcopy(state_history)
         state_copy.move(move[0], move[1], history_copy)

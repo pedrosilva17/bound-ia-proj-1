@@ -9,27 +9,6 @@ class MCTS:
         self.player = player
         self.leaves = [root]
 
-    def get_children(self):
-        return self.children
-
-    # def traverse(self):
-    #     node = self.root
-    #     while len(node.get_children()) > 0:
-    #         if random:
-    #             node = node.get_children()[random.randint(0, len(node.get_children()))]
-    #         else:
-    #             node = node.get_children().sort(lambda x: x.get_value())[0]
-    #     return node
-
-    # def populate_children(self, node):
-    #     moves = node.state.available_moves(node.state[0].get_player_piece(), node.state[1])
-    #     child = generate_node(moves, node)
-    #     node.add_child(state)
-    #     self.leaves.append(child)
-    #     if (node.children == node.max_children):
-    #         self.leaves.remove(node)
-    #     return child
-
     def select(self):
         map(lambda x: x.update_ucb(), self.leaves)
         filter(lambda x: check_children(x), self.leaves)
@@ -44,7 +23,7 @@ class MCTS:
     def expand(self, node):
 
         moves = node.state[0].available_moves(
-            node.state[0].get_player_piece(), node.state[1])
+            node.state[0].player_piece, node.state[1])
         rand = random.randint(0, len(moves)-1)
         child = self.generate_node(moves[rand], node)
         node.add_child(child)
@@ -60,7 +39,7 @@ class MCTS:
         end = False
         while not end:
             moves = node.state[0].available_moves(
-                node.state[0].get_player_piece(), node.state[1])
+                node.state[0].player_piece, node.state[1])
             rand = random.randint(0, len(moves)-1)
             node = self.generate_node(moves[rand], node)
             end = node.state[0].is_final()
@@ -98,7 +77,7 @@ class MCTS_node:
         self.move = move
         self.parent = parent
         self.max_children = state[0].count_moves(
-            state[0].get_player_piece(), state[1])
+            state[0].player_piece, state[1])
 
         self.visits = 0
         self.value = 0
