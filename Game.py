@@ -1,7 +1,3 @@
-#
-# Controlar board states para evitar stalemates
-#
-import time
 import math
 import random
 import re
@@ -18,8 +14,17 @@ from utils import parse_int_input
 
 
 class Player:
+    """Class representing a game's player, storing its name and piece.
+    """
 
     def __init__(self, index: int, piece: Piece, name: str = "") -> None:
+        """Initialize a new player.
+
+        Args:
+            index (int): The index (order) of the player. Only used to generate a default name.
+            piece (Piece): The piece that the player controls.
+            name (str, optional): The name of the player.
+        """
         self.index = index
         self.piece = piece
         if name == "":
@@ -86,7 +91,8 @@ class State:
     def update_winner(self):
         paths = self.board.paths
         for fork in paths:
-            if Piece.Empty not in [f.status for f in paths[fork]] and fork.status != Piece.Empty:
+            if Piece.Empty not in [
+                    f.status for f in paths[fork]] and fork.status != Piece.Empty:
                 self.winner = Piece(3 - fork.status.value)
                 return
 
@@ -158,7 +164,8 @@ class State:
     def is_final(self):
         paths = self.board.paths
         for fork in paths:
-            if Piece.Empty not in [f.status for f in paths[fork]] and fork.status != Piece.Empty:
+            if Piece.Empty not in [
+                    f.status for f in paths[fork]] and fork.status != Piece.Empty:
                 return True
         return False
 
@@ -233,6 +240,8 @@ class Bound:
                 return (self.execute_minimax_move, 1)
             case 4:
                 return (self.execute_minimax_move, 3)
+            case 5:
+                return (self.execute_minimax_move, 2)
 
     def play(self, mode: int, bot_1: int = 0, bot_2: int = 0) -> Player:
         state_copy = deepcopy(self.state)
