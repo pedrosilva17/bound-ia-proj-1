@@ -12,6 +12,7 @@ import numpy
 
 from Graph import Graph, Vertex, Piece
 from Interface import Interface
+from constants import BOT_NAME
 from mcts import MCTS, MCTS_node
 from utils import parse_int_input
 
@@ -256,9 +257,7 @@ class Bound:
                 "2 - The Raccoon (MCTS depth 50)\n"
                 "3 - The Deer (Minimax depth 1)\n"
                 "4 - The Fox (Minimax depth 3)\n", 1, 4)
-        bot_1, depth_1 = self.choose_bot(bot_1)
-        bot_2, depth_2 = self.choose_bot(bot_2)
-        return bot_1, depth_1, bot_2, depth_2
+        return bot_1, bot_2
 
     def choose_bot(self, bot_choice: int) -> tuple[Callable, int]:
         match bot_choice:
@@ -279,11 +278,17 @@ class Bound:
             case 1:
                 winner = self.game_loop(self.ask_move, self.ask_move)
             case 2:
-                bot_1, depth_1, _, _ = self.ask_bot(bot_1, 1)
+                bot_1, _ = self.ask_bot(bot_1, -1)
+                self.player_2.name = BOT_NAME[bot_1]
+                bot_1, depth_1 = self.choose_bot(bot_1)
                 winner = self.game_loop(
                     self.ask_move, bot_1, next_player_depth=depth_1)
             case 3:
-                bot_1, depth_1, bot_2, depth_2 = self.ask_bot(bot_1, bot_2)
+                bot_1, bot_2 = self.ask_bot(bot_1, bot_2)
+                self.player_1.name = BOT_NAME[bot_1]
+                self.player_2.name = BOT_NAME[bot_2]
+                bot_1, depth_1 = self.choose_bot(bot_1)
+                bot_2, depth_2 = self.choose_bot(bot_2)
                 winner = self.game_loop(
                     bot_1, bot_2, depth_1, depth_2)
 
@@ -531,7 +536,7 @@ def one_game() -> None:
         p1_name = re.sub(
             r'\W+', '',
             input(
-                "Player 1 - Insert your n        print(len(range(self.outer_length * 3, self.outer_length * 4)))ame. You will play first.\n"
+                "Player 1 - Insert your name. You will play first.\n"
                 "Only alphanumeric characters and underscores will be stored.\n"))
         p1_piece = parse_int_input("Player 1 - Choose your piece:\n"
                                    "1 - Red, the outer pieces.\n"
@@ -575,7 +580,8 @@ def example():
         run = False
 
 
-def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1, bot_2: int = 2) -> dict:
+def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1,
+              bot_2: int = 1) -> dict:
     p1 = Player(1, Piece(Piece.Red), "Red")
     p2 = Player(2, Piece(Piece.Black), "Black")
     results = {"Red": 0, "Black": 0}
@@ -587,7 +593,7 @@ def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1,
         winner = game.play(3, bot_1, bot_2)
         # print(f"Last move: {game.state.get_opponent_piece()}")
         # print(f"Winner: {winner.get_name()}")
-        results[winner.get_name()] += 1
+        results[str(winner.piece.name)] += 1
         print(i)
     print(results)
     return results
