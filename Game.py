@@ -187,7 +187,7 @@ class Bound:
         self.outer_length = outer_length
 
         self.state = State(self.player_1, Board(outer_length))
-        self.ui = Interface()
+        # self.ui = Interface()
         self.initial_board = self.state.board
         self.place_pieces(free_space)
 
@@ -266,21 +266,21 @@ class Bound:
                     bot_1, bot_2, depth_1, depth_2)
 
         if self.player_1.piece == winner:
-            input(
-                f"Winner: {self.player_1.name} ({self.player_1.piece.name})")
-            self.ui.quit()
+            # input(
+            #     f"Winner: {self.player_1.name} ({self.player_1.piece.name})")
+            # self.ui.quit()
             return self.player_1
         else:
-            input(
-                f"Winner: {self.player_2.name} ({self.player_2.piece.name})")
-            self.ui.quit()
+            # input(
+            #     f"Winner: {self.player_2.name} ({self.player_2.piece.name})")
+            # self.ui.quit()
             return self.player_2
 
     def game_loop(
             self, player_func, next_player_func, player_depth=0,
             next_player_depth=0) -> Player:
-        self.ui.ui_init()
-        self.ui.render(self.state.board)
+        # self.ui.ui_init()
+        # self.ui.render(self.state.board)
         eval_func, next_eval_func = self.evaluate_state_4, self.evaluate_state_4
         # print(player_depth, next_player_depth)
         while not self.state_history[-1].winner:
@@ -302,7 +302,7 @@ class Bound:
             player_depth, next_player_depth = next_player_depth, player_depth
             # print(self.state)
             # print(self.state_history)
-            self.ui.render(self.state.board)
+            # self.ui.render(self.state.board)
             if len(self.state_history) > 20:
                 self.state_history = self.state_history[1:]
 
@@ -417,7 +417,7 @@ class Bound:
 
         # print(best_move[0], best_move[1])
         # print(self.state.valid_move(best_move[0], best_move[1], self.state.player_piece, self.state_history))
-        print("Best Move: ", best_move)
+        # print("Best Move: ", best_move)
         self.state.move(best_move[0], best_move[1], self.state_history)
         self.state.update_winner()
         state_copy = deepcopy(self.state)

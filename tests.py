@@ -80,8 +80,3 @@ print("-mm5 x mm3-")
 save_results(10, False, 5, 4)
 print("-mm3 x mm5-")
 save_results(10, False, 4, 5)
-
-print("-mm2 x mm1-")
-save_results(10, True, 5, 3)
-print("-mm1 x mm2-")
-save_results(10, True, 3, 5)
