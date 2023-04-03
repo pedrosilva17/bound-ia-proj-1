@@ -123,7 +123,6 @@ class State:
                 return Piece(3 - fork.get_status().value)
 
     def move(self, curr_index: int, move_index: int, state_history: list) -> None:
-        # TODO
         # print(self.valid_move(curr_index, move_index, self.player_piece, state_history))
         if self.valid_move(
                 curr_index, move_index, self.player_piece, state_history):
@@ -246,17 +245,17 @@ class Bound:
         if bot_1 == 0:
             bot_1 = parse_int_input(
                 "Choose the difficulty for computer 1, from 1 (Very Easy) to 4 (Hard):\n"
-                "1- The Clueless (Random moves)\n"
-                "2- The Statistician (MCTS depth 50)\n"
-                "3- The Greedy (Minimax depth 1)\n"
-                "4- The Omnissiah (Minimax depth 3)\n", 1, 4)
+                "1 - The Squirrel (Random moves)\n"
+                "2 - The Raccoon (MCTS depth 50)\n"
+                "3 - The Deer (Minimax depth 1)\n"
+                "4 - The Fox (Minimax depth 3)\n", 1, 4)
         if bot_2 == 0:
             bot_2 = parse_int_input(
                 "Choose the difficulty for computer 2, from 1 (Very Easy) to 4 (Hard):\n"
-                "1- The Clueless (Random moves)\n"
-                "2- The Statistician (MCTS depth 50)\n"
-                "3- The Greedy (Minimax depth 1)\n"
-                "4- The Omnissiah (Minimax depth 3)\n", 1, 4)
+                "1 - The Squirrel (Random moves)\n"
+                "2 - The Raccoon (MCTS depth 50)\n"
+                "3 - The Deer (Minimax depth 1)\n"
+                "4 - The Fox (Minimax depth 3)\n", 1, 4)
         bot_1, depth_1 = self.choose_bot(bot_1)
         bot_2, depth_2 = self.choose_bot(bot_2)
         return bot_1, depth_1, bot_2, depth_2
@@ -438,6 +437,7 @@ class Bound:
 
         # print(best_move[0], best_move[1])
         # print(self.state.valid_move(best_move[0], best_move[1], self.state.get_player_piece(), self.state_history))
+        print("Best Move: ", best_move)
         self.state.move(best_move[0], best_move[1], self.state_history)
         self.state.update_winner()
         state_copy = deepcopy(self.state)
@@ -464,7 +464,7 @@ class Bound:
             iteration -= 1
 
         best_move = mcts.best_choice()
-        # print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
+        print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
         self.state.move(
             best_move.move[0],
             best_move.move[1],

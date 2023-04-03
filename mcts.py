@@ -79,8 +79,7 @@ class MCTS:
         self.back_propagate(node.parent, result)
 
     def best_choice(self):
-        self.root.children.sort(key=lambda x: x.value, reverse=True)
-        # print([x.value for x in self.root.children])
+        self.root.children.sort(key = lambda x: x.value, reverse = True)
         return self.root.children[0]
 
     def generate_node(self, move, parent):

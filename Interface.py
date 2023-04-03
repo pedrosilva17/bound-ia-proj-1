@@ -5,8 +5,8 @@ from constants import COLOR_DICT
 class Interface:
 
     def __init__(self):    
-        self.DEFAULT_WIDTH = 800
-        self.DEFAULT_HEIGHT = 750
+        self.DEFAULT_WIDTH = 900
+        self.DEFAULT_HEIGHT = 800
         self.CENTER_X = self.DEFAULT_WIDTH/2
         self.CENTER_Y = self.DEFAULT_HEIGHT/2
         self.OUTER_RADIUS = self.DEFAULT_HEIGHT-520
@@ -16,9 +16,9 @@ class Interface:
 
     def ui_init(self):
         pg.init()
-        self.bg_image = pg.image.load("./assets/bg-sprite.png")
+        self.bg_image = pg.image.load("./assets/background.jpg")
         self.screen = pg.display.set_mode((self.DEFAULT_WIDTH, self.DEFAULT_HEIGHT))
-        self.screen.blit(self.bg_image, (0,0))
+        self.screen.blit(self.bg_image, (100,0))
         pg.display.flip()
 
     def xy_calc(self, layer, angle, radius, offset=0):
@@ -62,10 +62,12 @@ class Interface:
         font = pg.font.SysFont('arial', 9)
         for (p,e) in board.get_paths().items():
             for edge in e:
-                pg.draw.line(self.screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1], 3)
+                pg.draw.line(self.screen, (255,255,255), vertex_list[p.get_index()][1], vertex_list[edge.get_index()][1], 2)
         for (v, pos) in vertex_list:
-            pg.draw.circle(self.screen, (255,255,255), pos, 11)
-            pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 9)
+            if board.get_fork(v).get_status().name == "Empty":
+                pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 10)
+            else:
+                pg.draw.circle(self.screen, COLOR_DICT[board.get_fork(v).get_status().name], pos, 15)
             if board.get_fork(v).get_status().name != "Empty": 
                 textColor = (255,255,255)
             else:
