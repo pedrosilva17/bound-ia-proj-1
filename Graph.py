@@ -16,8 +16,6 @@ class Vertex:
         self.index = index
         self.status = status
 
-    # Setters
-
     def set_index(self, index: int):
         """Set a new index for the vertex.
 
@@ -61,8 +59,6 @@ class Graph:
         for i in range(num_vertices):
             self.add_vertex(Vertex(i))
 
-    # Getters
-
     def get_vertex(self, index: int) -> Vertex:
         """Get the vertex with the given index.
 
@@ -93,8 +89,6 @@ class Graph:
         """
         return self.adj_list.get(self.get_vertex(index))
 
-    # Add
-
     def add_vertex(self, vertex: Vertex):
         """Add a new vertex to the graph.
 
@@ -116,8 +110,6 @@ class Graph:
             self.adj_list[v1].append(v2)
         if v1 not in self.adj_list[v2]:
             self.adj_list[v2].append(v1)
-
-    # Remove
 
     def remove_vertex(self, index: int):
         """Remove the vertex of a given index from the graph.

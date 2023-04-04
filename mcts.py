@@ -65,6 +65,7 @@ class MCTS_node:
 class MCTS:
     """Class representing the MCTS algorithm.
     """
+
     def __init__(self, root: MCTS_node, player):
         """Initialize a new instance of the MCTS algorithm.
 
@@ -165,7 +166,7 @@ class MCTS:
         Returns:
             MCTS_node: The best child (highest value)
         """
-        self.root.children.sort(key = lambda x: x.value, reverse = True)
+        self.root.children.sort(key=lambda x: x.value, reverse=True)
         return self.root.children[0]
 
     def generate_node(self, move, parent):

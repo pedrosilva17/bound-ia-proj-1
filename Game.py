@@ -164,7 +164,6 @@ class State:
         Raises:
             ValueError: The move is invalid.
         """
-        # print(self.valid_move(curr_index, move_index, self.player_piece, state_history))
         if self.valid_move(
                 curr_index, move_index, self.player_piece, state_history):
             self.board.get_fork(move_index).set_status(self.player_piece)
@@ -322,7 +321,7 @@ class Bound:
         self.outer_length = outer_length
 
         self.state = State(self.player_1, Board(outer_length))
-        # self.ui = Interface()
+        self.ui = Interface()
         self.initial_board = self.state.board
         self.place_pieces(free_space)
 
@@ -437,14 +436,14 @@ class Bound:
                     bot_1, bot_2, depth_1, depth_2)
 
         if self.player_1.piece == winner:
-            # input(
-            #     f"Winner: {self.player_1.name} ({self.player_1.piece.name})")
-            # self.ui.quit()
+            input(
+                f"Winner: {self.player_1.name} ({self.player_1.piece.name})")
+            self.ui.quit()
             return self.player_1
         else:
-            # input(
-            #     f"Winner: {self.player_2.name} ({self.player_2.piece.name})")
-            # self.ui.quit()
+            input(
+                f"Winner: {self.player_2.name} ({self.player_2.piece.name})")
+            self.ui.quit()
             return self.player_2
 
     def game_loop(
@@ -462,16 +461,11 @@ class Bound:
         Returns:
             Piece: The piece type that won the game.
         """
-        # self.ui.ui_init()
-        # self.ui.render(self.state.board)
+        self.ui.ui_init()
+        self.ui.render(self.state.board)
         eval_func, next_eval_func = self.evaluate_state_4, self.evaluate_state_4
-        # print(player_depth, next_player_depth)
         while not self.state_history[-1].winner:
             valid = False
-            # print(self.state.list_moves(self.state.player_piece), self.state.list_moves(Piece(3 - self.state.player_piece.value)))
-            # print(evaluate_state_1(self.state))
-            # print(evaluate_state_2(self.state))
-            # print(evaluate_state_3(self.state))
             match player_func.__name__:
                 case "execute_minimax_move":
                     player_func(eval_func, player_depth)
@@ -483,9 +477,7 @@ class Bound:
                     player_func()
             player_func, next_player_func = next_player_func, player_func
             player_depth, next_player_depth = next_player_depth, player_depth
-            # print(self.state)
-            # print(self.state_history)
-            # self.ui.render(self.state.board)
+            self.ui.render(self.state.board)
             if len(self.state_history) > 20:
                 self.state_history = self.state_history[1:]
 
@@ -519,6 +511,7 @@ class Bound:
             self.state.player_piece,
             self.state_history)
         piece, move = moves[random.randint(0, len(moves) - 1)]
+        print(f"Move ({self.state.player_piece.name}): {(piece, move)}")
         self.state.move(piece, move, self.state_history)
         self.state.update_winner()
         state_copy = deepcopy(self.state)
@@ -618,7 +611,7 @@ class Bound:
 
         Args:
             evaluate_func (Callable): The evaluation function to be used in the algorithm.
-            depth (int): The algorithm's depth.
+            depth (int): The algorithm's depth, excluding the call to this function.
         """
         move_eval_list = []
         for move in self.state.available_moves(
@@ -628,7 +621,6 @@ class Bound:
             state_copy = deepcopy(self.state)
             state_copy.move(move[0], move[1], history_copy)
             history_copy.append(state_copy)
-            # print(state_copy)
             minimax_val = minimax(
                 state_copy, depth, False, -math.inf, math.inf, history_copy,
                 evaluate_func, self.state.player_piece)
@@ -642,12 +634,10 @@ class Bound:
             filter(
                 lambda k: k[1] == move_eval_list[0][1],
                 move_eval_list))
-        # print(move_eval_list)
-        best_move = move_eval_list[random.randint(0, len(move_eval_list)-1)][0]
 
-        # print(best_move[0], best_move[1])
-        # print(self.state.valid_move(best_move[0], best_move[1], self.state.player_piece, self.state_history))
-        # print("Best Move: ", best_move)
+        best_move = move_eval_list[random.randint(0, len(move_eval_list)-1)][0]
+        print(
+            f"Best Move ({self.state.player_piece.name}): {best_move}, value {move_eval_list[0][1]}")
         self.state.move(best_move[0], best_move[1], self.state_history)
         self.state.update_winner()
         state_copy = deepcopy(self.state)
@@ -680,7 +670,8 @@ class Bound:
             iteration -= 1
 
         best_move = mcts.best_choice()
-        # print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
+        print(
+            f"Best Move ({self.state.player_piece.name}): {best_move.move}, value {best_move.value}")
         self.state.move(
             best_move.move[0],
             best_move.move[1],
@@ -808,7 +799,7 @@ def example():
     game = Bound(p1, p2, 5, 0)
     run = True
     while run:
-        game.play(1)
+        game.play(3)
         run = False
 
 
@@ -835,8 +826,7 @@ def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1,
         else:
             game = Bound(p1, p2, 5, 0)
         winner = game.play(3, bot_1, bot_2)
-        # print(f"Last move: {game.state.get_opponent_piece()}")
-        # print(f"Winner: {winner.get_name()}")
+        print(f"Winner: {winner.get_name()}")
         results[str(winner.piece.name)] += 1
         print(i)
     print(results)

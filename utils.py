@@ -1,4 +1,5 @@
-def parse_int_input(message: str, lower_bound: int = 0, upper_bound: int = 10000) -> int:
+def parse_int_input(
+        message: str, lower_bound: int = 0, upper_bound: int = 10000) -> int:
     """Request and parse a user's integer input, making sure it is in fact an integer 
     between the specified limit.
 

@@ -24,7 +24,7 @@ def save_results(n_games: int, rev_start_order: bool, bot_1: int, bot_2: int):
             data[bot_1][bot_2] = f"{results['Black']}-{results['Red']}"
         else:
             data[bot_1][bot_2] = f"{results['Red']}-{results['Black']}"
-    
+
     with open(f'results_{filename}.csv', mode='w', newline='') as file:
         writer = csv.writer(file)
         for row in data:
