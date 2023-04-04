@@ -32,31 +32,44 @@ class Player:
         else:
             self.name = name
 
-    def get_opponent_piece(self):
-        return Piece(3 - self.piece.value)
-
     def __repr__(self):
         return self.name
 
 
 class Board(Graph):
+    """Class representing a game's board, which is essentially an extension of a graph.
+
+    Args:
+        Graph (Graph): The graph class being extended.
+    """
 
     def __init__(self, outer_length: int = 5) -> None:
+        """Initialize an empty board with the given outer layer length.
+        Its size will equal the layer's length times 4.
+
+        Args:
+            outer_length (int, optional): The length of the outer layer. Defaults to 5.
+        """
         super().__init__(outer_length * 4)
 
+        # Connect every vertex of index i with every vertex of index i+i, except for the last vertex
         for i in range(outer_length * 4 - 1):
             v1 = self.get_vertex(i)
             v2 = self.get_vertex((i + 1))
             self.add_edge(v1, v2)
 
+            # Connect vertices of the outer layer with the vertices directly below them.
             if i in range(outer_length - 1):
                 v3 = self.get_vertex(outer_length + 2 + i * 2)
                 self.add_edge(v1, v3)
+
+            # Connect vertices of the inner layer with the vertices directly above them.
             elif i in range(outer_length + 1, outer_length * 3 - 1, 2):
                 v3 = self.get_vertex(outer_length * 3 + 1 +
                                      (i - outer_length - 1) // 2)
                 self.add_edge(v1, v3)
 
+        # Create loops inside the different layers
         self.add_edge(self.get_vertex(outer_length - 1), self.get_vertex(0))
         self.add_edge(
             self.get_vertex(outer_length * 3 - 1),
@@ -69,6 +82,14 @@ class Board(Graph):
         self.paths = self.adj_list
 
     def get_fork(self, index: int) -> Vertex:
+        """Get the fork corresponding to the given index.
+
+        Args:
+            index (int): The fork's index.
+
+        Returns:
+            Vertex: A fork from the board, which is an instance of the Vertex class.
+        """
         return super().get_vertex(index)
 
     def __repr__(self):
@@ -76,19 +97,44 @@ class Board(Graph):
 
 
 class State:
+    """Class representing a game state, which stores the board, the moving player and the winner (if one exists after the move)
+    """
 
     def __init__(self, player: Player, board: Board = Board(5)) -> None:
+        """Initialize a new state with the given player and board.
+
+        Args:
+            player (Player): The player to execute a move.
+            board (Board, optional): The current board.
+            Defaults to a new Board instance of outer length 5 (if it is an initial state).
+        """
         self.board = board
         self.player_piece = player.piece
         self.winner = None
 
-    def get_player_piece_list(self, player_piece: Piece):
+    def get_player_piece_list(self, player_piece: Piece) -> list:
+        """Get the list of pieces from the state's player, given its piece type.
+
+        Args:
+            player_piece (Piece): The piece controller by the state's player.
+
+        Returns:
+            list: The list of indices of the state player's pieces.
+        """
         return [i for i in self.board.forks if self.board.get_fork(i).status == player_piece]
 
-    def get_opponent_piece(self):
+    def get_opponent_piece(self) -> Piece:
+        """Get the opposite of the state player's piece, which represents the opponent's piece in a game.
+
+        Returns:
+            Piece: The piece with a value opposite to the player.
+        """
+        # 3 - 1 = 2 and 3 - 2 = 1, 1 and 2 are the values for the Red and Black pieces
         return Piece(3 - self.player_piece.value)
 
-    def update_winner(self):
+    def update_winner(self) -> None:
+        """Update the winner in case a piece has no moves left.
+        """
         paths = self.board.paths
         for fork in paths:
             if Piece.Empty not in [
@@ -97,6 +143,17 @@ class State:
                 return
 
     def move(self, curr_index: int, move_index: int, state_history: list) -> None:
+        """Execute a move, given the indices of the moving piece and the
+        target fork, as well as the state's history.
+
+        Args:
+            curr_index (int): The index of the piece to be moved.
+            move_index (int): The index of the fork to place the piece.
+            state_history (list): The game's state history.
+
+        Raises:
+            ValueError: The move is invalid.
+        """
         # print(self.valid_move(curr_index, move_index, self.player_piece, state_history))
         if self.valid_move(
                 curr_index, move_index, self.player_piece, state_history):
@@ -107,14 +164,32 @@ class State:
         else:
             raise ValueError("Invalid move!")
 
-        return self
-
     def valid_move(
             self, curr_index: int, move_index: int, player_piece: Piece,
             state_history: list) -> bool:
+        """Check if a move is valid or not.
+
+        Args:
+            curr_index (int): The index of the piece to be moved.
+            move_index (int): The index of the fork to place the piece.
+            player_piece (Piece): The state player's piece.
+            state_history (list): The game's state history.
+
+        Returns:
+            bool: True if the move is valid, False otherwise.
+        """
         curr_fork = self.board.get_fork(curr_index)
         move_fork = self.board.get_fork(move_index)
 
+        """
+        A move is valid if:
+            - curr_fork points to a non-empty fork (a piece)
+            - The piece belongs to the state player
+            - The target fork is in the piece's neighbourhood
+            - The target fork is empty
+            - It does not restart a previously closed movement loop, up to a certain length
+            More info on stalemates present on the game's rulebook.
+        """
         if (move_fork in self.board.paths[curr_fork]
                 and curr_fork.status == player_piece
                 and move_fork.status == Piece.Empty):
@@ -136,6 +211,15 @@ class State:
 
     def available_moves(
             self, player_piece: Piece, state_history: list) -> list:
+        """Get the available moves a given player can execute.
+
+        Args:
+            player_piece (Piece): The player's piece type.
+            state_history (list): The game's state history.
+
+        Returns:
+            list: List of moves, composed of tuples in the format (chosen_piece_idx, target_fork_idx).
+        """
         moves = []
         for i in self.get_player_piece_list(player_piece):
             for j in self.board.get_siblings(i):
@@ -145,23 +229,52 @@ class State:
                     moves.append((i, j.index))
         return moves
 
-    def count_moves(self, player_piece: Piece, state_history: list):
+    def count_moves(self, player_piece: Piece, state_history: list) -> int:
+        """Count the number of moves available to a given player.
+
+        Args:
+            player_piece (Piece): The player's piece type.
+            state_history (list): The game's state history.
+
+        Returns:
+            int: The number of available moves.
+        """
         return len(self.available_moves(player_piece, state_history))
 
-    def count_middle_pieces(self, player_piece: Piece):
+    def count_middle_pieces(self, player_piece: Piece) -> int:
+        """Count the amount of pieces from a given player in the middle layer of the board.
+
+        Args:
+            player_piece (Piece): The player's piece type.
+
+        Returns:
+            int: The number of pieces in the middle layer.
+        """
         return sum(
             self.get_player_piece_list(player_piece).count(i)
             for i in range(
                 self.board.outer_length, self.board.outer_length * 4))
 
-    def list_moves(self, player_piece: Piece):
+    def list_moves(self, player_piece: Piece) -> list:
+        """List the number of moves available for each piece, given a player.
+
+        Args:
+            player_piece (Piece): The player's piece type.
+
+        Returns:
+            list: A list of the number of possible moves for each player piece.
+        """
         player_path_status = [
-            list(map(lambda fork: fork.status,
-                     v)) for k, v in self.board.paths.items()
-            if k.status == player_piece]
+            list(map(lambda fork: fork.status, v)) for k,
+            v in self.board.paths.items() if k.status == player_piece]
         return [path.count(Piece.Empty) for path in player_path_status]
 
-    def is_final(self):
+    def is_final(self) -> bool:
+        """Check if a state is final or not.
+
+        Returns:
+            bool: True if the state is final, False otherwise.
+        """
         paths = self.board.paths
         for fork in paths:
             if Piece.Empty not in [
@@ -169,6 +282,7 @@ class State:
                 return True
         return False
 
+    # Two states are considered equal if the board is the same.
     def __eq__(self, state):
         return self.board == state.board
 
@@ -177,10 +291,21 @@ class State:
 
 
 class Bound:
+    """Class representing a game instance.
+    """
 
     def __init__(
-            self, player_1: Player, player_2: Player, outer_length: int,
-            free_space: int) -> None:
+            self, player_1: Player, player_2: Player, outer_length: int = 5,
+            free_space: int = 0) -> None:
+        """Initialize a new Bound game between two given players, given a board's outer length 
+        and the free space on the outer/inner layer chosen by one of the players.
+
+        Args:
+            player_1 (Player): The starting player.
+            player_2 (Player): The second player.
+            outer_length (int): The length of the outer layer.
+            free_space (int): The free space on the outer/inner layer.
+        """
         self.state_history = []
         self.player_1 = player_1
         self.player_2 = player_2
@@ -192,6 +317,12 @@ class Bound:
         self.place_pieces(free_space)
 
     def place_pieces(self, free_space: int) -> None:
+        """Place the pieces on the outer/inner layers of the board, given an index of a fork to leave empty
+        (mirrored on the opposite layer).
+
+        Args:
+            free_space (int): The free space on the outer/inner layer.
+        """
         if self.player_1.piece == Piece.Red:
             for i in range(self.outer_length):
                 if i == free_space:
@@ -213,7 +344,18 @@ class Bound:
                     continue
                 self.initial_board.get_fork(j).set_status(Piece.Red)
 
-    def ask_bot(self, bot_1, bot_2) -> tuple[Callable, Callable, int, int]:
+    def ask_bot(self, bot_1: int, bot_2: int) -> tuple[int, int]:
+        """Ask the user for a bot difficulty, if not already defined.
+
+        Args:
+            bot_1 (int): The integer representing the first bot difficulty
+            bot_2 (int): The integer representing the second bot difficulty
+            The arguments can also have the value 0 if the user is to be asked the difficulties,
+            or -1 on one of the arguments if the player is supposed to be a human.
+
+        Returns:
+            tuple[int, int]: A tuple composed of the two integers representing the chosen bots.
+        """
         if bot_1 == 0:
             bot_1 = parse_int_input(
                 "Choose the difficulty for computer 1, from 1 (Very Easy) to 4 (Hard):\n"
@@ -231,6 +373,15 @@ class Bound:
         return bot_1, bot_2
 
     def choose_bot(self, bot_choice: int) -> tuple[Callable, int]:
+        """Get the strategy used by the bot of the chosen difficuly, as well as its depth.
+
+        Args:
+            bot_choice (int): The chosen bot difficulty.
+
+        Returns:
+            tuple[Callable, int]: A tuple composed of the strategy's function and its depth
+            (or 0 if no depth is needed).
+        """
         match bot_choice:
             case 1:
                 return (self.random_move, 0)
@@ -242,6 +393,18 @@ class Bound:
                 return (self.execute_minimax_move, 3)
 
     def play(self, mode: int, bot_1: int = 0, bot_2: int = 0) -> Player:
+        """Start a new game with the initialized class attributes.
+
+        Args:
+            mode (int): The gamemode chosen in the menu or predefined, from 1 to 3.
+            bot_1 (int, optional): The first chosen bot difficulty. Defaults to 0.
+            bot_2 (int, optional): The second chosen bot difficulty. Defaults to 0.
+            A bot difficulty value of 0 means that the user will have to be asked their
+            desired one.
+
+        Returns:
+            Player: The player that won the game, after it is played.
+        """
         state_copy = deepcopy(self.state)
         self.state_history = [state_copy]
 
@@ -275,8 +438,20 @@ class Bound:
             return self.player_2
 
     def game_loop(
-            self, player_func, next_player_func, player_depth=0,
-            next_player_depth=0) -> Player:
+            self, player_func: Callable, next_player_func: Callable, player_depth: int = 0,
+            next_player_depth: int = 0) -> Piece:
+        """The main game loop. Consists of executing a move, swapping players and
+        adding the state to the state history, verifying if a winner has been declared on each iteration.
+
+        Args:
+            player_func (Callable): The starting player's strategy.
+            next_player_func (Callable): The second player's strategy.
+            player_depth (int, optional): The starting player's depth. Defaults to 0 (Strategy doesn't need depth).
+            next_player_depth (int, optional): The second player's depth. Defaults to 0 (Strategy doesn't need depth).
+
+        Returns:
+            Piece: The piece type that won the game.
+        """
         # self.ui.ui_init()
         # self.ui.render(self.state.board)
         eval_func, next_eval_func = self.evaluate_state_4, self.evaluate_state_4
