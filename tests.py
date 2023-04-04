@@ -35,6 +35,7 @@ def save_results(n_games: int, rev_start_order: bool, bot_1: int, bot_2: int):
 
 
 print("--Red first--")
+"""
 print("-mm1 x mm1-")
 save_results(30, False, 3, 3)
 print("-mm1 x mm3-")
@@ -53,15 +54,24 @@ print("-mm1 x mcts50-")
 save_results(10, False, 3, 2)
 print("-mcts50 x mm3-")
 save_results(10, False, 2, 4)
+"""
 print("-mm3 x mcts50-")
 save_results(10, False, 4, 2)
+"""
+"""
 print("--Black first--")
+"""
 print("-mm1 x mm1-")
 save_results(30, True, 3, 3)
 print("-mm1 x mm3-")
 save_results(10, True, 3, 4)
 print("-mm3 x mm1-")
 save_results(10, True, 4, 3)
+"""
+print("-mcts50 x random-")
+save_results(10, True, 2, 1)
+print("-random x mcts50-")
+save_results(10, True, 1, 2)
 print("-mcts50 x mm1-")
 save_results(10, True, 2, 3)
 print("-mm1 x mcts50-")
@@ -70,5 +80,11 @@ print("-mcts50 x mm3-")
 save_results(10, True, 2, 4)
 print("-mm3 x mcts50-")
 save_results(10, True, 4, 2)
+print("-mcts50 x mcts50- (red)")
+save_results(10, False, 2, 2)
+print("-mcts50 x mcts50- (black)")
+save_results(10, True, 2, 2)
+"""
 print("-mm3 x mm3-")
 save_results(10, True, 4, 4)
+"""

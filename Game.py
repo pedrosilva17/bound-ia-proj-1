@@ -3,9 +3,7 @@ import random
 import re
 from copy import deepcopy
 from typing import Callable
-
 import numpy
-
 from Graph import Graph, Vertex, Piece
 from Interface import Interface
 from constants import BOT_NAME
@@ -141,6 +139,17 @@ class State:
                     f.status for f in paths[fork]] and fork.status != Piece.Empty:
                 self.winner = Piece(3 - fork.status.value)
                 return
+            
+    def simulate_winner(self) -> Piece | None:
+        """Check and return a winner if it exists, without updating the state.
+
+        Returns:
+            Piece: The winning piece type.
+        """
+        paths = self.board.paths
+        for fork in paths:
+            if Piece.Empty not in [f.status for f in paths[fork]] and fork.status != Piece.Empty:
+                return Piece(3 - fork.status.value)
 
     def move(self, curr_index: int, move_index: int, state_history: list) -> None:
         """Execute a move, given the indices of the moving piece and the
@@ -617,7 +626,7 @@ class Bound:
             iteration -= 1
 
         best_move = mcts.best_choice()
-        print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
+        # print("Best Move: ", best_move.move, "\nWith value: ", best_move.value)
         self.state.move(
             best_move.move[0],
             best_move.move[1],
