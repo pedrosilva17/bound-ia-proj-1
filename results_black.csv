@@ -4,5 +4,5 @@ MCTS,8-2,8-2,0-10,0-10
 MINIMAX1,100-0,9-1,22-8,0-10
 MINIMAX3,0-0,10-0,10-0,2-8
 
-Heuristic: 4 vs 4
+Eval func: 4 vs 4
 Start: Black

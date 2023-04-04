@@ -3,8 +3,47 @@ import math
 from copy import deepcopy
 
 
+class MCTS_node:
+    def __init__(self, state, move, parent):
+        self.state = state
+        self.move = move
+        self.parent = parent
+        self.max_children = state[0].count_moves(
+            state[0].player_piece, state[1])
+
+        self.visits = 0
+        self.value = 0
+        self.ucb = 0
+        self.children = []
+
+    def update_value(self, nvalue):
+        self.value += nvalue
+
+    def update_visits(self):
+        self.visits += 1
+
+    def update_ucb(self, c=2):
+        if self.parent is None:
+            p_visits = 0
+        else:
+            p_visits = self.parent.visits
+
+        self.ucb = self.value + c * math.sqrt(p_visits/self.visits)
+
+    def add_child(self, child):
+        self.children.append(child)
+
+
 class MCTS:
-    def __init__(self, root, player):
+    """Class representing the MCTS algorithm.
+    """
+    def __init__(self, root: MCTS_node, player):
+        """Initialize a new instance of the MCTS algorithm.
+
+        Args:
+            root (MCTS_node): The starting point of the algorithm.
+            player (_type_): _description_
+        """
         self.root = root
         self.player = player
         self.leaves = [root]
@@ -69,34 +108,3 @@ class MCTS:
         history_copy.append(state_copy)
 
         return MCTS_node((state_copy, history_copy), move, parent)
-
-
-class MCTS_node:
-    def __init__(self, state, move, parent):
-        self.state = state
-        self.move = move
-        self.parent = parent
-        self.max_children = state[0].count_moves(
-            state[0].player_piece, state[1])
-
-        self.visits = 0
-        self.value = 0
-        self.ucb = 0
-        self.children = []
-
-    def update_value(self, nvalue):
-        self.value += nvalue
-
-    def update_visits(self):
-        self.visits += 1
-
-    def update_ucb(self, c=2):
-        if parent == None:
-            p_visits = 0
-        else:
-            p_visits = self.parent.visits
-
-        self.ucb = self.value + c * math.sqrt(p_visits/self.visits)
-
-    def add_child(self, child):
-        self.children.append(child)

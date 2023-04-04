@@ -15,7 +15,7 @@ class Player:
     """Class representing a game's player, storing its name and piece.
     """
 
-    def __init__(self, index: int, piece: Piece, name: str = "") -> None:
+    def __init__(self, index: int, piece: Piece, name: str = ""):
         """Initialize a new player.
 
         Args:
@@ -41,7 +41,7 @@ class Board(Graph):
         Graph (Graph): The graph class being extended.
     """
 
-    def __init__(self, outer_length: int = 5) -> None:
+    def __init__(self, outer_length: int = 5):
         """Initialize an empty board with the given outer layer length.
         Its size will equal the layer's length times 4.
 
@@ -98,7 +98,7 @@ class State:
     """Class representing a game state, which stores the board, the moving player and the winner (if one exists after the move)
     """
 
-    def __init__(self, player: Player, board: Board = Board(5)) -> None:
+    def __init__(self, player: Player, board: Board = Board(5)):
         """Initialize a new state with the given player and board.
 
         Args:
@@ -130,7 +130,7 @@ class State:
         # 3 - 1 = 2 and 3 - 2 = 1, 1 and 2 are the values for the Red and Black pieces
         return Piece(3 - self.player_piece.value)
 
-    def update_winner(self) -> None:
+    def update_winner(self):
         """Update the winner in case a piece has no moves left.
         """
         paths = self.board.paths
@@ -139,7 +139,7 @@ class State:
                     f.status for f in paths[fork]] and fork.status != Piece.Empty:
                 self.winner = Piece(3 - fork.status.value)
                 return
-            
+
     def simulate_winner(self) -> Piece | None:
         """Check and return a winner if it exists, without updating the state.
 
@@ -148,10 +148,11 @@ class State:
         """
         paths = self.board.paths
         for fork in paths:
-            if Piece.Empty not in [f.status for f in paths[fork]] and fork.status != Piece.Empty:
+            if Piece.Empty not in [
+                    f.status for f in paths[fork]] and fork.status != Piece.Empty:
                 return Piece(3 - fork.status.value)
 
-    def move(self, curr_index: int, move_index: int, state_history: list) -> None:
+    def move(self, curr_index: int, move_index: int, state_history: list):
         """Execute a move, given the indices of the moving piece and the
         target fork, as well as the state's history.
 
@@ -305,7 +306,7 @@ class Bound:
 
     def __init__(
             self, player_1: Player, player_2: Player, outer_length: int = 5,
-            free_space: int = 0) -> None:
+            free_space: int = 0):
         """Initialize a new Bound game between two given players, given a board's outer length 
         and the free space on the outer/inner layer chosen by one of the players.
 
@@ -325,7 +326,7 @@ class Bound:
         self.initial_board = self.state.board
         self.place_pieces(free_space)
 
-    def place_pieces(self, free_space: int) -> None:
+    def place_pieces(self, free_space: int):
         """Place the pieces on the outer/inner layers of the board, given an index of a fork to leave empty
         (mirrored on the opposite layer).
 
@@ -447,8 +448,8 @@ class Bound:
             return self.player_2
 
     def game_loop(
-            self, player_func: Callable, next_player_func: Callable, player_depth: int = 0,
-            next_player_depth: int = 0) -> Piece:
+            self, player_func: Callable, next_player_func: Callable,
+            player_depth: int = 0, next_player_depth: int = 0) -> Piece:
         """The main game loop. Consists of executing a move, swapping players and
         adding the state to the state history, verifying if a winner has been declared on each iteration.
 
@@ -475,11 +476,11 @@ class Bound:
                 case "execute_minimax_move":
                     player_func(eval_func, player_depth)
                     eval_func, next_eval_func = next_eval_func, eval_func
-                case "execute_mcts":
-                    player_func()
-                case _:
+                case "ask_move":
                     while not valid:
                         valid = player_func()
+                case _:
+                    player_func()
             player_func, next_player_func = next_player_func, player_func
             player_depth, next_player_depth = next_player_depth, player_depth
             # print(self.state)
@@ -490,19 +491,12 @@ class Bound:
 
         return self.state.winner
 
-    def available_moves(
-            self, player_piece: Piece, state_history: list) -> list:
-        moves = []
-        for i in self.state.get_player_piece_list(player_piece):
-            for j in self.state.board.get_siblings(i):
-                if self.state.valid_move(
-                        i, j.index,
-                        player_piece, state_history):
-                    moves.append((i, j.index))
-        moves = sorted(moves, key=lambda k: k[1], reverse=True)
-        return moves
+    def ask_move(self) -> bool:
+        """Ask a human player for a move and execute it (if it is valid).
 
-    def ask_move(self):
+        Returns:
+            bool: True if the move is valid, False otherwise.
+        """
         piece = parse_int_input(
             f"{self.state.player_piece.name}, What piece do you move?\n",
             0, self.state.board.outer_length * 4 - 1)
@@ -515,11 +509,13 @@ class Bound:
             self.state_history.append(state_copy)
             return True
         except ValueError:
-            print("Invalid move. Try again")
+            print("Invalid move. Try again!")
             return False
 
     def random_move(self):
-        moves = self.available_moves(
+        """Select a random available move and execute it.
+        """
+        moves = self.state.available_moves(
             self.state.player_piece,
             self.state_history)
         piece, move = moves[random.randint(0, len(moves) - 1)]
@@ -529,7 +525,19 @@ class Bound:
         self.state_history.append(state_copy)
         return True
 
-    def evaluate_state_1(self, state: State, caller):
+    # evaluate_state_n -> Board evaluation functions used by minimax.
+
+    def evaluate_state_1(self, state: State, caller: Piece) -> int | float:
+        """Evaluates the board based on: sum(no_player_moves) - sum(no_opp_moves)
+
+        Args:
+            state (State): The state storing the board to evaluate.
+            caller (Piece): The piece type of the player that called the strategy.
+
+        Returns:
+            int | float: The evaluation result as an integer, except if the result is infinity
+            (which is considered a float)
+        """
         player = len(
             state.available_moves(
                 state.player_piece,
@@ -539,13 +547,23 @@ class Bound:
                 state.get_opponent_piece(),
                 self.state_history))
         value = player - opponent
-        if opponent == 0:
+        if 0 in state.list_moves(state.get_opponent_piece()):
             value = math.inf
-        elif player == 0:
+        elif 0 in state.list_moves(state.player_piece):
             value = -math.inf
         return value if caller == state.player_piece else -value
 
     def evaluate_state_2(self, state: State, caller):
+        """Evaluates the board based on: prod(no_player_moves) - prod(no_opp_moves)
+
+        Args:
+            state (State): The state storing the board to evaluate.
+            caller (Piece): The piece type of the player that called the strategy.
+
+        Returns:
+            int | float: The evaluation result as an integer, except if the result is infinity
+            (which is considered a float)
+        """
         player = numpy.prod(state.list_moves(state.player_piece))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
         value = player - opponent
@@ -556,22 +574,52 @@ class Bound:
         return value if caller == state.player_piece else -value
 
     def evaluate_state_3(self, state: State, caller):
+        """Evaluates the board based on the sum of the two previous evaluation functions.
+
+        Args:
+            state (State): The state storing the board to evaluate.
+            caller (Piece): The piece type of the player that called the strategy.
+
+        Returns:
+            int | float: The evaluation result as an integer, except if the result is infinity
+            (which is considered a float)
+        """
         value = self.evaluate_state_1(
             state, caller) + self.evaluate_state_2(state, caller)
         return value if caller == state.player_piece else -value
 
+    # This is our prefered evaluation function.
+    # Tries to prioritize moves that take control of the middle layer of the board,
+    # while still considering the move advantage it generates.
     def evaluate_state_4(self, state: State, caller):
+        """Evaluates the board based on: 
+        prod(no_player_moves) - prod(no_opp_moves) + no_player_middle_pieces
+
+        Args:
+            state (State): The state storing the board to evaluate.
+            caller (Piece): The piece type of the player that called the strategy.
+
+        Returns:
+            int | float: The evaluation result as an integer, except if the result is infinity
+            (which is considered a float)
+        """
         player = numpy.prod(state.list_moves(state.player_piece))
         opponent = numpy.prod(state.list_moves(state.get_opponent_piece()))
         value = player - opponent + state.count_middle_pieces(
-            state.player_piece) - state.count_middle_pieces(state.get_opponent_piece())
+            state.player_piece)
         if opponent == 0:
             value = math.inf
         elif player == 0:
             value = -math.inf
         return value if caller == state.player_piece else -value
 
-    def execute_minimax_move(self, evaluate_func, depth: int):
+    def execute_minimax_move(self, evaluate_func: Callable, depth: int):
+        """Run minimax to evaluate possible moves and execute one of the best.
+
+        Args:
+            evaluate_func (Callable): The evaluation function to be used in the algorithm.
+            depth (int): The algorithm's depth.
+        """
         move_eval_list = []
         for move in self.state.available_moves(
                 self.state.player_piece,
@@ -605,7 +653,13 @@ class Bound:
         state_copy = deepcopy(self.state)
         self.state_history.append(state_copy)
 
-    def execute_mcts(self, iteration_total=50):
+    def execute_mcts(self, iteration_total: int = 50):
+        """Run Monte Carlo Tree Search with a given number of iterations to rate
+        available moves and execute a (potentially) good one.
+
+        Args:
+            iteration_total (int, optional): The number of iterations. Defaults to 50.
+        """
         state_copy = deepcopy(self.state)
         history_copy = deepcopy(self.state_history)
 
@@ -638,7 +692,24 @@ class Bound:
 
 def minimax(
         state: State, depth: int, maximizing: bool, alpha: int, beta: int,
-        state_history, evaluate_func, caller):
+        state_history: list, evaluate_func: Callable, caller: Piece) -> int | float:
+    """The minimax algorithm. Select the best possible move considering
+    the caller and his opponent's choices (depending on the depth).
+
+    Args:
+        state (State): The game state.
+        depth (int): The algorithm's depth.
+        maximizing (bool): If the current depth stores the maximum value (True) or not (False).
+        alpha (int): The lower value bound to consider.
+        beta (int): The upper value bound to consider.
+        state_history (list): The game's state history.
+        evaluate_func (Callable): The function that will evaluate the board.
+        caller (Piece): The piece type of the player who called the first iteration of minimax.
+
+    Returns:
+        int | float: The evaluation result as an integer, except if the result is infinity
+        (which is considered a float)
+    """
     if depth == 0 or state.is_final():
         return evaluate_func(state, caller)
     if maximizing:
@@ -675,7 +746,9 @@ def minimax(
     return min_eval
 
 
-def one_game() -> None:
+def one_game():
+    """Prepare a single game of Bound.
+    """
     game_mode = parse_int_input("Choose your gamemode:\n"
                                 "1- Human vs Human\n"
                                 "2- Human vs Computer\n"
@@ -728,17 +801,31 @@ def one_game() -> None:
 
 
 def example():
+    """Quickly setup a game of Bound (mostly used during testing).
+    """
     p1 = Player(1, Piece.Red, "player_1")
     p2 = Player(2, Piece.Black, "player_2")
     game = Bound(p1, p2, 5, 0)
     run = True
     while run:
-        game.play(3)
+        game.play(1)
         run = False
 
 
 def run_games(n_games: int = 100, rev_start_order: bool = False, bot_1: int = 1,
               bot_2: int = 1) -> dict:
+    """Run an arbitrary amount of computer vs computer games while storing the wins for each player.
+
+    Args:
+        n_games (int, optional): The amount of games to run. Defaults to 100.
+        rev_start_order (bool, optional): True if the Black pieces start, False otherwise. Defaults to False.
+        bot_1 (int, optional): The first bot's difficulty. Defaults to 1.
+        bot_2 (int, optional): The second bot's difficulty. Defaults to 1.
+
+    Returns:
+        dict: A dictionary with the two piece types as keys and their respective amount
+        of wins as values.
+    """
     p1 = Player(1, Piece(Piece.Red), "Red")
     p2 = Player(2, Piece(Piece.Black), "Black")
     results = {"Red": 0, "Black": 0}
