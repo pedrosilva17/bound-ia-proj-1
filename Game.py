@@ -590,7 +590,7 @@ class Bound:
 
     # This is our prefered evaluation function.
     # Tries to prioritize moves that take control of the middle layer of the board,
-    # while still considering the move advantage it generates.
+    # while still considering the available move advantage it generates.
     def evaluate_state_4(self, state: State, caller):
         """Evaluates the board based on: 
         prod(no_player_moves) - prod(no_opp_moves) + no_player_middle_pieces
